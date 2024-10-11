@@ -1,0 +1,31 @@
+<div class="modal-header">
+    <h5 class="modal-title" id="quick-view-modal-label">{{ product.name }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <div class="text-center">
+        <img class="img-fluid" src="{{ product.image_urls[0] if product.image_urls else product.image_url }}" alt="{{ product.name }}">
+        <h5 class="fw-bolder mt-3">{{ product.name }}</h5>
+        <p>{{ product.description }}</p>
+        <h6>€{{ product.price }}</h6>
+        {% if product.discount > 0 %}
+            <span class="text-muted text-decoration-line-through">€{{ product.original_price }}</span>
+            <span class="fw-bold">€{{ product.price }}</span>
+        {% else %}
+            €{{ product.price }}
+        {% endif %}
+        <div>
+            <h5>Taglie Disponibili:</h5>
+            {% for size in product.sizes %}
+                <span class="badge bg-secondary">{{ size }}</span>
+            {% endfor %}
+        </div>
+        <button class="btn btn-primary mt-3" 
+            hx-post="{{ url_for('add_to_cart', user_id=user.id if user else 'guest') }}" 
+            hx-vals='{"product_id": "{{ product["_id"] }}", "quantity": 1}' 
+            hx-target="#cart-preview-container" 
+            hx-swap="innerHTML">
+            Aggiungi al carrello
+        </button>
+    </div>
+</div>

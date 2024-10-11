@@ -1,0 +1,27 @@
+{% for product in products %}
+    <tr>
+        <td>{{ product['_id'] }}</td>
+        <td>{{ product['name'] }}</td>
+        <td>{{ product['description'] }}</td>
+        <td>{{ product['price'] }}</td>
+        <td>{{ product['color'] }}</td>
+        <td>{{ product['sizes'] | join(", ") }}</td>
+        <td>
+            {% for image_url in product['image_urls'] %}
+                <img src="{{ image_url }}" alt="{{ product['name'] }}" style="max-width: 100px;">
+            {% endfor %}
+        </td>
+        <td>{{ product['views'] }}</td>
+        <td>{{ product['purchases'] }}</td>
+        <td>
+            <a href="{{ url_for('update_product', product_id=product['_id']) }}" class="btn btn-primary">Modifica</a>
+            <a href="#" class="btn btn-danger delete-product" 
+               hx-delete="{{ url_for('delete_product', product_id=product['_id']) }}" 
+               hx-confirm="Sei sicuro di voler eliminare questo prodotto?" 
+               hx-target="closest tr"
+               hx-swap="innerHTML">
+               Elimina
+            </a>
+        </td>
+    </tr>
+{% endfor %}

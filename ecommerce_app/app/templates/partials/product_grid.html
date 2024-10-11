@@ -1,0 +1,49 @@
+{% for product in products %}
+    <div class="col mb-5">
+        <div class="card h-100">
+            <a href="{{ url_for('product_detail', id=product['_id']) }}">
+                <img class="card-img-top" src="{{ product.image_urls[0] if product.image_urls else product.image_url }}" alt="{{ product.name }}" />
+            </a>
+            <div class="card-body p-4">
+                <div class="text-center">
+                    <h5 class="fw-bolder">{{ product.name }}</h5>
+                    {% if product.discount > 0 %}
+                        <span class="text-muted text-decoration-line-through">€{{ product.original_price }}</span>
+                        <span class="fw-bold">€{{ product.price }}</span>
+                    {% else %}
+                        €{{ product.price }}
+                    {% endif %}
+                    
+                    <!-- Selettore di Taglia -->
+                    <div class="btn-group" role="group">
+                        {% for size in product.sizes %}
+                        <button class="btn btn-outline-dark size-button" 
+                            hx-post="{{ url_for('select_size') }}" 
+                            hx-vals='{"product_id": "{{ product["_id"] }}", "size": "{{ size }}"}' 
+                            hx-target="#selected-size-{{ product['_id'] }}" 
+                            hx-swap="outerHTML"
+                            hx-trigger="click">
+                            {{ size }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <span id="selected-size-{{ product['_id'] }}"></span>
+
+                    <!-- Bottone "Aggiungi al carrello" -->
+                    <button class="btn btn-outline-dark mt-auto"
+                    type="button"
+                    id="add-to-cart-{{ product['_id'] }}"
+                    hx-post="{{ url_for('add_to_cart', user_id=user.id if user else 'guest') }}"
+                    hx-trigger="click"
+                    hx-vals='{"product_id": "{{ product["_id"] }}", "quantity": 1, "size": ""}'
+                    hx-target="#cart-preview-container"
+                    hx-swap="innerHTML"
+                    hx-trigger="event:add-to-cart"
+                    disabled>
+                    Aggiungi al carrello
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}

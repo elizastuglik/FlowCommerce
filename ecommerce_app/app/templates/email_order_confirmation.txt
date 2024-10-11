@@ -1,0 +1,23 @@
+Ciao,
+
+Grazie per il tuo ordine!
+
+Dettagli dell'ordine:
+Ordine ID: {{ order_id }}
+Totale: €{{ total }}
+
+Articoli ordinati:
+{% for item in cart %}
+- {{ item.quantity }}x {{ item.name }} ({{ item.size }}) - €{{ item.price }}
+{% endfor %}
+
+Spedizione:
+Indirizzo: {{ shipping_details.address }}
+Città: {{ shipping_details.city }}
+CAP: {{ shipping_details.cap }}
+Paese: {{ shipping_details.country }}
+
+Il tuo ordine sarà spedito a breve. Grazie per aver acquistato da noi!
+
+Cordiali saluti,
+Il team di MyShop

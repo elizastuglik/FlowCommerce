@@ -1,0 +1,41 @@
+<ul class="list-group mb-4" id="reviews">
+    {% for review in reviews %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ review.username }}</strong> 
+                <p>{{ review.text }}</p>
+                {% if review.photo %}
+                    <img src="{{ review.photo }}" alt="Review photo" class="img-thumbnail" style="max-width: 100px;">
+                {% endif %}
+            </div>
+            <!-- Aggiungi l'icona di eliminazione solo se l'utente corrente è l'autore della recensione -->
+            {% if user and review.username == user.username %}
+                <button class="btn btn-link text-danger p-0 ms-3" 
+                        hx-delete="{{ url_for('delete_review', review_id=review['_id']) }}" 
+                        hx-target="#reviews" 
+                        hx-swap="innerHTML">
+                    &#x2716;
+                </button>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% if user %}
+<form hx-post="{{ url_for('add_review', product_id=product['_id']) }}" 
+      hx-target="#reviews" 
+      hx-swap="innerHTML"
+      enctype="multipart/form-data"
+      hx-encoding="multipart/form-data">
+    <div class="mb-3">
+        <label for="reviewText" class="form-label">Scrivi una recensione</label>
+        <textarea class="form-control" id="reviewText" name="reviewText" rows="3" required></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="reviewPhoto" class="form-label">Allega una foto</label>
+        <input type="file" class="form-control" id="reviewPhoto" name="reviewPhoto" accept="image/*">
+    </div>
+    <button type="submit" class="btn btn-primary">Invia Recensione</button>
+</form>
+{% else %}
+    <p><a href="{{ url_for('login') }}">Accedi</a> per lasciare una recensione.</p>
+{% endif %}

@@ -1,0 +1,43 @@
+<div id="order-summary">
+    <h4>Riepilogo dell'ordine</h4>
+    <ul class="list-group mb-3">
+        {% for item in cart %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="img-thumbnail" style="max-width: 50px;">
+            <span>{{ item.name }}</span>
+            <span>{{ item.size }}</span>
+            <span class="badge bg-primary rounded-pill">{{ item.quantity }}</span>
+            <span>€{{ item.price }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Messaggio di conferma dello sconto -->
+    {% if discount_code_applied %}
+    <div class="alert alert-success mt-2" role="alert">
+        Codice sconto applicato! Hai risparmiato €{{ discount_amount }}.
+    </div>
+    {% endif %}
+
+    <!-- Messaggio di errore per il codice sconto -->
+    {% if discount_code_error %}
+    <div class="alert alert-danger mt-2" role="alert">
+        {{ discount_code_error }}
+    </div>
+    {% endif %}
+
+    <!-- Subtotale, Sconto e Spedizione -->
+    <h4 class="mb-3">Subtotale: €{{ subtotal }}</h4>
+
+    {% if discount_amount > 0 %}
+        <h5 class="mb-3 text-success">Sconto applicato: -€{{ discount_amount }}</h5>
+    {% endif %}
+
+    <h5 class="mb-3">Costo di spedizione: €{{ shipping_cost }}</h5>
+
+    {% if subtotal >= 40 %}
+        <p class="text-success">Complimenti! Hai diritto alla spedizione gratuita!</p>
+    {% endif %}
+
+    <h4 class="mb-4">Totale: €{{ total }}</h4>
+</div>

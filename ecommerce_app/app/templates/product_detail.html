@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>{{ product.name }} - Product Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+    <body style="font-family: 'Raleway', sans-serif;">
+    <!-- Container for the HTMX-loaded cart preview -->
+    <div id="cart-preview-container" class="cart-preview-container"></div>
+    <!-- Container for the HTMX-loaded guest alert -->
+    <div id="guest-alert-container" hx-get="{{ url_for('guest_alert') }}" hx-trigger="load"></div>
+    
+     <!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
+    <div class="container px-4 px-lg-5">
+        <a class="navbar-brand text-success fw-bold" href="{{ url_for('index') }}">FlowCommerce</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link text-dark" aria-current="page" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item text-dark" href="{{ url_for('show_products') }}?category=cappelli">Cappelli</a></li>
+                        <li><a class="dropdown-item text-dark" href="{{ url_for('show_products') }}?category=Magliette">Magliette</a></li>
+                        <li><a class="dropdown-item text-dark" href="{{ url_for('show_products') }}?category=Sacche di tela">Sacche di tela</a></li>
+                        <li><a class="dropdown-item text-dark" href="{{ url_for('show_products') }}?category=felpe">Felpe</a></li>
+                        <li><a class="dropdown-item text-dark" href="{{ url_for('show_products') }}?category=calzini">Calzini</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <form class="d-flex me-2 position-relative" action="/search" method="GET">
+                <div class="input-group position-relative">
+                    <input class="form-control me-2 border-0"
+                           type="search" 
+                           id="search-input" 
+                           name="query" 
+                           placeholder="Search" 
+                           aria-label="Search" 
+                           autocomplete="off"
+                           hx-get="/search_suggestions" 
+                           hx-trigger="keyup changed delay:300ms" 
+                           hx-target="#suggestions-container" 
+                           hx-swap="innerHTML"
+                           hx-indicator=".htmx-indicator">
+                </div>
+                <div class="htmx-indicator d-none">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div id="suggestions-container" class="list-group position-absolute w-100"></div>
+            </form>
+            <div class="d-flex position-relative">
+                <a class="text-dark position-relative p-0 me-2" id="cart-button" href="{{ url_for('view_cart', user_id=user.id if user else 'guest') }}">
+                    <i class="bi bi-cart-fill"></i>
+                    <span class="badge bg-dark text-white position-absolute top-0 start-100 translate-middle badge rounded-pill" id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
+                </a>
+                {% if user %}
+                    <div class="dropdown">
+                        <a class="text-dark dropdown-toggle p-0" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-fill"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item text-dark" href="{{ url_for('profile') }}">Dati personali</a></li>
+                            <li><a class="dropdown-item text-dark" href="{{ url_for('user_orders') }}">I tuoi ordini</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-dark" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="text-dark p-0 ms-2" href="{{ url_for('login') }}">
+                        <i class="bi bi-person-fill"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+
+    <!-- Free Shipping Text and Progress Bar -->
+    <div id="shipping-progress-section" class="free-shipping-section" hx-get="/api/shipping_progress" hx-trigger="load, event:updateShipping" hx-swap="outerHTML">
+        <span class="free-shipping-text" id="shipping-text">
+            Spedizione gratuita per ordini superiori a 40€. Mancano: €40.0
+        </span>
+        <div class="progress-container">
+            <div class="progress-bar-custom" id="progress-bar" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <hr class="short-divider">
+    
+    <!-- Main content container -->
+    <div class="container product-detail-container">
+        <div class="row">
+            <!-- Product Image Section -->
+            <div class="col-md-6">
+                <div id="productCarousel" class="carousel slide position-relative" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        {% for image_url in product.image_urls %}
+                            <div class="carousel-item {% if loop.index == 1 %}active{% endif %}">
+                                <img src="{{ image_url }}" class="d-block w-100" alt="{{ product.name }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+
+                    <!-- Best Seller Badge -->
+                    {% if product.is_best_seller %}
+                    <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-3 p-2 best-seller-badge">
+                        <i class="bi bi-star-fill"></i> Best Seller
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Product Info Section -->
+            <div class="col-md-6">
+                <div class="product-info">
+                    <h1 class="display-4">{{ product.name }}</h1>
+                    
+                    <!-- Price Section -->
+                    <div class="price-section">
+                        <span class="price-label">Prezzo:</span>
+                        <span class="discounted-price">€{{ product.price }}</span>
+                        {% if product.original_price and product.original_price > product.price %}
+                            <span class="original-price text-muted text-decoration-line-through">€{{ product.original_price }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Material Section -->
+                    <div class="mt-3">
+                        <h5>Materiale:</h5>
+                        <p>{{ product.material }}</p>
+                    </div>
+
+                    <!-- Size Selection -->
+                    <div class="mt-3">
+                        <h5>Taglie Disponibili:</h5>
+                        <div class="btn-group" role="group">
+                            {% for size in product.sizes %}
+                            <button class="btn btn-outline-dark size-button" 
+                                hx-post="{{ url_for('select_size') }}" 
+                                hx-vals='{"product_id": "{{ product["_id"] }}", "size": "{{ size }}"}'
+                                hx-target="#add-to-cart-container-{{ product['_id'] }}" 
+                                hx-swap="innerHTML"
+                                hx-include="this"
+                                hx-classes="active">
+                                {{ size }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div id="add-to-cart-container-{{ product['_id'] }}" class="mt-3">
+                        <button class="btn btn-outline-dark add-to-cart-button" type="button" id="add-to-cart-{{ product['_id'] }}" disabled>
+                            Seleziona la taglia
+                        </button>
+                    </div>
+
+                    <!-- Motivational Patterns Section -->
+                    <div class="motivational-patterns mt-4">
+                        {% if product.quantity is not none and product.quantity > 0 %}
+                            {% if 'limited_stock' in product and product.quantity <= product.limited_stock %}
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Solo {{ product.quantity }} articoli rimasti in magazzino! Affrettati!
+                                </div>
+                            {% endif %}
+                            {% if product.views > 0 %}
+                                <div>
+                                    <p><i class="bi bi-eye"></i> <b>{{ product.views }}</b> persone hanno visualizzato questo prodotto oggi</p>
+                                </div>
+                            {% endif %}
+                            {% if product.purchases > 0 %}
+                                <div>
+                                    <p><i class="bi bi-cart"></i> <b>{{ product.purchases }}</b> persone hanno acquistato questo prodotto nelle ultime 24 ore</p>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-danger">
+                                <i class="bi bi-x-circle"></i> Questo prodotto non è più disponibile.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Discount Timer -->
+                    {% if product.discount %}
+                    <div class="alert alert-danger mt-3">
+                        <p>Offerta valida per altre:</p>
+                        <div id="countdown-timer" hx-get="{{ url_for('discount_timer', product_id=product._id) }}" hx-trigger="load"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <hr class="short-divider">
+
+    <!-- Reviews Section -->
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="border-bottom pb-2 mb-4">Recensioni</h2>
+                <div id="reviews">
+                    {% include 'reviews.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-auto py-3 bg-dark text-white text-center">
+        <div class="container">
+            <p class="m-0 small">Copyright &copy; FlowCommerce</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</body>
+</html>

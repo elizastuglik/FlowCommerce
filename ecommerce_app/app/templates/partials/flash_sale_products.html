@@ -1,0 +1,23 @@
+<div class="card offer-card mb-4 border-dark">
+    <div class="card-header text-center bg-light text-dark">OFFERTE LAMPO</div>
+    <div class="card-body">
+        {% for product in flash_sale_products %}
+        <div class="flash-sale-product mb-3">
+            <a href="{{ url_for('product_detail', id=product['_id']) }}">
+                <img class="card-img-top mb-2" src="{{ product.image_urls[0] if product.image_urls else product.image_url }}" alt="{{ product.name }}" />
+            </a>
+            <h5 class="card-title">{{ product.name }}</h5>
+            <p class="card-text">
+                {% if product.discount > 0 %}
+                    <span class="text-muted text-decoration-line-through">€{{ product.original_price }}</span>
+                    <span class="fw-bold">€{{ product.price }}</span>
+                {% else %}
+                    <span class="fw-bold">€{{ product.price }}</span>
+                {% endif %}
+            </p>
+            <a href="{{ url_for('product_detail', id=product['_id']) }}" class="btn btn-primary btn-sm">Scopri di più</a>
+        </div>
+        <hr>
+        {% endfor %}
+    </div>
+</div>
