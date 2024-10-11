@@ -17,11 +17,11 @@ from flask_mail import Mail, Message
 from flask_caching import Cache
 
 # Configurazione della cache in memoria
-app.config['CACHE_TYPE'] = 'SimpleCache'  # Usa la cache in memoria (per esempio)
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # Timeout di default di 300 secondi (5 minuti)
+app.config['CACHE_TYPE'] = 'SimpleCache' 
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  
 
 cache = Cache(app)  
-#Configurazione di Flask-Login utilizzato per gestire meglio l'autenticazione
+
 login_manager = LoginManager() 
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -33,9 +33,9 @@ app.config['MAIL_SERVER'] = 'sandbox.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 2525
 app.config['MAIL_USERNAME'] = '43fd97f692e019'
 app.config['MAIL_PASSWORD'] = '0d31f2ca91143a'
-app.config['MAIL_USE_TLS'] = True  # Usa TLS per una connessione sicura
-app.config['MAIL_USE_SSL'] = False  # Non utilizzare SSL
-app.config['MAIL_DEFAULT_SENDER'] = 'noreply@ecommerce.com'  # Indirizzo del mittente predefinito
+app.config['MAIL_USE_TLS'] = True  
+app.config['MAIL_USE_SSL'] = False  
+app.config['MAIL_DEFAULT_SENDER'] = 'noreply@ecommerce.com'  
 
 # Inizializza Flask-Mail
 mail = Mail(app)
@@ -74,7 +74,7 @@ def before_request():
 
     g.cart_item_count = cart_item_count
     
-# Definizione del modello utente per Flask-Login
+
 class User(UserMixin):
     def __init__(self, user_id):
         self.id = user_id
@@ -90,7 +90,7 @@ def initialize_session(user):
     session['user_id'] = str(user['_id'])
     session['is_admin'] = user.get('is_admin', False)
 
-# è un decorator in Flask che permette di creare variabili ch efacilmente possono essere utilizzate nei template 
+
 @app.context_processor
 def inject_user():
     user_id = session.get('user_id')
@@ -108,17 +108,17 @@ def inject_user():
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    # Esegui il logout dell'utente
+    
     logout_user()
 
-    # Rimuovi le variabili di sessione relative all'utente
+   
     session.pop('user_id', None)
     session.pop('is_admin', None)
 
-    # Opzionalmente, mostra un messaggio di logout riuscito
+    
     flash('Logged out successfully', 'success')
 
-    # Reindirizza l'utente alla pagina di login
+    
     return redirect(url_for('login'))
 
 @app.route('/')
@@ -135,72 +135,72 @@ def index():
         cart = get_guest_cart()
         cart_item_count = sum(item['quantity'] for item in cart)
 
-    # Ottieni tutti i prodotti
+    
     products = list(mongo.db.product.find())
 
-    # Ottieni i best sellers usando la funzione dedicata
+    
     best_sellers = get_best_sellers()
     best_seller_ids = {str(product['_id']) for product in best_sellers}
 
-    # Aggiungi l'attributo 'is_best_seller' ai prodotti e calcola il prezzo scontato
+    
     for product in products:
         product['_id'] = str(product['_id'])
         product['is_best_seller'] = product['_id'] in best_seller_ids
 
-        # Calcola il prezzo scontato se c'è uno sconto
-        if product.get('discount', 0) > 0:  # Verifica se c'è uno sconto
-            product['original_price'] = product['price']  # Salva il prezzo originale
-            product['price'] = product['price'] - (product['price'] * product['discount'] / 100)  # Applica lo sconto
+       
+        if product.get('discount', 0) > 0:  
+            product['original_price'] = product['price']  
+            product['price'] = product['price'] - (product['price'] * product['discount'] / 100) 
         else:
-            product['original_price'] = product['price']  # Assicura che 'original_price' venga impostato anche senza sconto
-    # Non caricare flash_sale_products separatamente, sarà gestito da HTMX
+            product['original_price'] = product['price']  
+    
     return render_template(
         'index.html',
         user=user,
         cart_item_count=cart_item_count,
         is_admin=is_admin,
         products=products,
-        best_sellers=best_sellers  # Passa solo i best sellers direttamente al template
+        best_sellers=best_sellers  
     )
 
 @app.route('/products', methods=['GET'])
 def show_products():
-    # Ottieni i parametri dalla richiesta (categoria e filtro colore)
-    category = request.args.get('category')
-    color_filter = request.args.get('filter')  # Filtro per colore, ad esempio
     
-    # Definisci la query per il database
+    category = request.args.get('category')
+    color_filter = request.args.get('filter')  
+    
+    
     query = {}
     
-    # Filtra per categoria se specificata
+    
     if category:
         query['category'] = category.strip().capitalize()
     
-    # Aggiungi il filtro per colore se specificato
+    
     if color_filter:
         query['color'] = color_filter
 
-    # Ottieni i prodotti filtrati dalla query
+   
     products = list(mongo.db.product.find(query))
 
-    # Ottieni i best sellers
+  
     best_sellers = get_best_sellers()
     best_seller_ids = {str(product['_id']) for product in best_sellers}
 
-    # Processa i prodotti per aggiungere eventuali sconti o etichette
+    
     for product in products:
-        product['_id'] = str(product['_id'])  # Converti ObjectId in stringa
+        product['_id'] = str(product['_id']) 
         product['is_best_seller'] = product['_id'] in best_seller_ids
         
-        # Se c'è uno sconto, calcola il prezzo scontato
+       
         if product.get('discount', 0) > 0:
             product['original_price'] = product['price']
             product['price'] = round(product['price'] - (product['price'] * product['discount'] / 100), 2)
 
-    # Ottieni i prodotti in offerta lampo
+    
     flash_sale_products = [product for product in products if product.get('discount', 0) > 0]
 
-    # Calcola il numero di articoli nel carrello dell'utente
+    
     user_id = session.get('user_id', 'guest')
     if user_id == 'guest':
         cart = get_guest_cart()
@@ -210,14 +210,14 @@ def show_products():
 
     cart_item_count = sum(item['quantity'] for item in cart)
 
-    # Renderizza la pagina dei prodotti con i dati
+   
     return render_template(
         'products.html',
-        category=category,              # Passa la categoria
-        products=products,              # Passa i prodotti filtrati
-        flash_sale_products=flash_sale_products,  # Passa i prodotti in sconto
-        best_sellers=best_sellers,      # Passa i best seller
-        cart_item_count=cart_item_count # Passa il conteggio degli articoli nel carrello
+        category=category,              
+        products=products,              
+        flash_sale_products=flash_sale_products,  
+        best_sellers=best_sellers,      
+        cart_item_count=cart_item_count 
     )
 
 
@@ -226,7 +226,7 @@ def show_products():
 @login_required
 def admin_dashboard():
     if not current_user.is_authenticated or not session.get('is_admin', False):
-        return redirect(url_for('index'))  # Reindirizza a una pagina di accesso non autorizzato
+        return redirect(url_for('index'))  
 
     return render_template('admin_dashboard.html', user=current_user)
 
@@ -331,7 +331,7 @@ def create_product():
         'limited_stock': limited_stock,
         'availability': availability,
         'sizes': sizes,
-        'color': color,  # Aggiungi il campo color al prodotto
+        'color': color,  
         'views': 0,
         'purchases': 0,
         'reviews': []
@@ -433,9 +433,9 @@ def delete_cart_item(product_id):
             'cart_item_count': cart_item_count
         }
 
-        # Verifica se la richiesta è fatta tramite HTMX
+       
         if 'HX-Request' in request.headers:
-            # Ritorna un frammento HTML da inserire nella pagina
+            
             return render_template_string(
                 '''
                 <div class="alert alert-success" role="alert">
@@ -445,7 +445,7 @@ def delete_cart_item(product_id):
                 message=response['message']
             )
 
-        # Se non è HTMX, restituisci JSON
+        
         return jsonify(response), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
@@ -458,7 +458,7 @@ def get_users():
             '_id': str(user['_id']),
             'username': user['username'],
             'email': user['email'],
-            'is_admin': user.get('is_admin', False),  # Default a False se non presente
+            'is_admin': user.get('is_admin', False),  
             'created_at': user.get('created_at', datetime.datetime.utcnow())
         }
         data.append(item)
@@ -467,7 +467,7 @@ def get_users():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    next_page = request.args.get('next', 'index')  # Default a 'index' se non è fornito
+    next_page = request.args.get('next', 'index')  
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -477,7 +477,7 @@ def login():
         if not user:
             flash('Username does not exist', 'danger')
             if 'HX-Request' in request.headers:
-                return render_template('_login_form.html', next=next_page), 200  # Solo il form viene renderizzato
+                return render_template('_login_form.html', next=next_page), 200  
             else:
                 return render_template('login.html', next=next_page)
 
@@ -496,21 +496,20 @@ def login():
 
         flash('Login successful!', 'success')
 
-        # Reindirizza alla pagina successiva
+        
         redirect_url = url_for('checkout') if next_page == 'checkout' else url_for(next_page)
         if 'HX-Request' in request.headers:
             return '', 204, {'HX-Redirect': redirect_url}
         else:
             return redirect(redirect_url)
 
-    # GET method
     cart_item_count = get_cart_item_count(session.get('user_id')) if session.get('user_id') else 0
     return render_template('login.html', next=next_page, cart_item_count=cart_item_count)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    next_page = request.args.get('next', 'index')  # Default a 'index' se non è fornito
+    next_page = request.args.get('next', 'index')  
     discount_eligible = request.args.get('discount', 'false') == '10'
 
     if request.method == 'POST':
@@ -524,21 +523,21 @@ def register():
         cap = request.form.get('cap')
         country = request.form.get('country')
 
-        # Verifica che tutti i campi siano stati compilati
+        
         if not username or not email or not password or not first_name or not last_name or not address or not city or not cap or not country:
             flash('Missing required fields', 'danger')
             return render_template('register.html', next=next_page, cart_item_count=get_cart_item_count(session.get('user_id')))
 
-        # Verifica se l'username è già registrato nel database
+        
         existing_user = mongo.db.users.find_one({'username': username})
         if existing_user:
             flash('Username already exists', 'danger')
             return render_template('register.html', next=next_page, cart_item_count=get_cart_item_count(session.get('user_id')))
 
-        # Hash della password prima di salvarla nel database
+        
         hashed_password = generate_password_hash(password)
 
-        # Creazione del documento utente da inserire nel database
+       
         user_data = {
             'username': username,
             'email': email,
@@ -550,27 +549,27 @@ def register():
             'cap': cap,
             'country': country,
             'created_at': datetime.datetime.utcnow(),
-            'discount_eligible': discount_eligible  # Flag per l'idoneità allo sconto
+            'discount_eligible': discount_eligible  
         }
 
         try:
-            # Inserimento del nuovo utente nel database
+            
             user_id = mongo.db.users.insert_one(user_data).inserted_id
-            user = mongo.db.users.find_one({'_id': user_id})  # Ottieni il documento del nuovo utente
+            user = mongo.db.users.find_one({'_id': user_id})  
 
-            # Trasferimento del carrello dell'ospite al nuovo utente
+            
             guest_cart = get_guest_cart()
             if guest_cart:
                 mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': guest_cart}})
-                save_guest_cart([])  # Svuota il carrello dell'ospite
+                save_guest_cart([])  
 
-            # Inizializzazione della sessione per l'utente registrato
+            
             initialize_session(user)
 
-            # Messaggio di registrazione con codice sconto
+            
             flash('Registration successful! Use code WELCOME10 to get 10% off your first order.', 'success')
 
-            # Reindirizzamento al login con il parametro 'next'
+            
             if 'HX-Request' in request.headers:
                 return '', 204, {'HX-Redirect': url_for('login', next=next_page)}
             else:
@@ -587,7 +586,7 @@ def register():
 @app.route('/profile')
 @login_required
 def profile():
-    # Assicurati che current_user contenga l'oggetto User caricato da Flask-Login
+   
     user_data = mongo.db.users.find_one({'_id': ObjectId(current_user.id)})
     
     if user_data:
@@ -599,7 +598,7 @@ def profile():
         cart_item_count = sum(item['quantity'] for item in user_data.get('cart', []))
         is_admin = user_data.get('is_admin', False)
     else:
-        # Gestisci il caso in cui l'utente non sia trovato nel database
+       
         user = None
         cart_item_count = 0
         is_admin = False
@@ -625,7 +624,7 @@ from flask import jsonify, render_template
 @login_required
 def addresses():
     user = current_user
-    # Recupera gli indirizzi dell'utente o fornisci dati di esempio
+    
     addresses = user.addresses if hasattr(user, 'addresses') else []
     return render_template('partials/addresses.html', addresses=addresses)
 
@@ -634,25 +633,24 @@ def addresses():
 @login_required
 def payment_methods():
     user = current_user
-    # Recupera i metodi di pagamento dell'utente o fornisci dati di esempio
+    
     payment_methods = user.payment_methods if hasattr(user, 'payment_methods') else []
     return render_template('partials/payment_methods.html', payment_methods=payment_methods)
 
-# Route per caricare le preferenze
 @app.route('/preferences', methods=['GET'])
 @login_required
 def preferences():
     user = current_user
-    # Recupera le preferenze dell'utente o fornisci dati di esempio
+   
     preferences = user.preferences if hasattr(user, 'preferences') else {}
     return render_template('partials/preferences.html', preferences=preferences)
 
-# Route per caricare le impostazioni di sicurezza
+
 @app.route('/security', methods=['GET'])
 @login_required
 def security():
     user = current_user
-    # Recupera le impostazioni di sicurezza dell'utente o fornisci dati di esempio
+    
     security_settings = user.security_settings if hasattr(user, 'security_settings') else {}
     return render_template('partials/security.html', security_settings=security_settings)
 
@@ -672,16 +670,16 @@ def add_to_cart(user_id):
         logging.error("Product not found")
         return jsonify({'error': 'Product not found'}), 404
 
-    # Calcola il prezzo del prodotto, applicando lo sconto se presente
+    
     price = product['price']
     if 'discount' in product and product['discount'] > 0:
-        # Calcola lo sconto come percentuale e applica la riduzione
+        
         original_price = price
         price = original_price - (original_price * product['discount'] / 100)
     else:
-        original_price = price  # Se non c'è sconto, l'original_price è uguale a price
+        original_price = price  
 
-    # Verifica e assegna l'URL dell'immagine come nella view del carrello
+    
     if 'image_urls' in product and product['image_urls']:
         image_url = product['image_urls'][0]
     else:
@@ -695,8 +693,8 @@ def add_to_cart(user_id):
         'quantity': quantity,
         'size': size,
         'name': product['name'],
-        'price': price,  # Prezzo aggiornato (scontato se applicabile)
-        'original_price': original_price,  # Prezzo originale senza sconto
+        'price': price,  
+        'original_price': original_price,  
         'image_url': image_url
     }
 
@@ -729,7 +727,7 @@ def add_to_cart(user_id):
             logging.error("User not found")
             return jsonify({'error': 'User not found'}), 404
 
-    # Incrementare il numero di acquisti del prodotto
+    
     products_collection.update_one({"_id": ObjectId(product_id)}, {"$inc": {"purchases": quantity}})
 
     response_html = render_template_string(
@@ -759,7 +757,7 @@ def add_to_cart(user_id):
         ''',
         product_name=product['name'],
         quantity=quantity,
-        price=price,  # Prezzo scontato (se applicabile)
+        price=price, 
         size=size,
         user_id=user_id,
         image_url=image_url,
@@ -768,10 +766,10 @@ def add_to_cart(user_id):
 
     response = make_response(response_html)
 
-    # Aggiungere il trigger per aggiornare la barra di spedizione
+    
     response.headers['HX-Trigger'] = json.dumps({
-        'updateCartBadge': cart_item_count,  # Aggiorna il badge del carrello
-        'updateShipping': True  # Aggiunge il trigger per la barra di spedizione
+        'updateCartBadge': cart_item_count,  
+        'updateShipping': True  
     })
 
     return response
@@ -813,7 +811,7 @@ def select_size():
 
 @app.route('/close-cart-preview', methods=['GET'])
 def close_cart_preview():
-    return '<div></div>', 200  # Return an empty div with a 200 OK status
+    return '<div></div>', 200  
 
 @app.route('/cart/items/<product_id>', methods=['PUT'])
 def update_cart_item(product_id):
@@ -862,26 +860,26 @@ def update_cart_item(product_id):
                     break
             save_guest_cart(cart)
 
-        # Ricalcola il totale del carrello e il numero di articoli
+        
         subtotal = sum(product['price'] * product['quantity'] for product in cart)
         cart_item_count = sum(product['quantity'] for product in cart)
 
-        # Log per controllo
+       
         app.logger.debug(f"Cart item count dopo l'aggiornamento: {cart_item_count}, Subtotal: {subtotal}")
 
-        # Renderizza solo l'elemento aggiornato
+        
         updated_product_html = render_template('cart_item.html', product=product, cart_item_count=cart_item_count, subtotal=subtotal)
 
-        # Crea la risposta per aggiornare solo l'elemento del carrello
+        
         response = make_response(updated_product_html)
 
-        # Invia i trigger per aggiornare il badge e il subtotale
+        
         response.headers['HX-Trigger'] = json.dumps({
             'updateCartBadge': cart_item_count,
             'updateSubtotal': f"€{subtotal:.2f}"
         })
 
-        # Aggiorna il cookie del conteggio articoli
+        
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
 
         return response
@@ -895,7 +893,7 @@ def update_cart_item(product_id):
 @app.route('/cart/items/<product_id>', methods=['DELETE'])
 def remove_from_cart(product_id):
     try:
-        # Ottieni la taglia dalla richiesta
+        
         size = request.args.get('size')
 
         if not size:
@@ -907,7 +905,7 @@ def remove_from_cart(product_id):
             if not user or 'cart' not in user:
                 return jsonify({'msg': 'Cart not found'}), 404
 
-            # Rimuovi solo l'articolo con la specifica taglia e product_id
+            
             original_cart_length = len(user['cart'])
             user['cart'] = [product for product in user['cart'] if not (product['product_id'] == product_id and product['size'] == size)]
 
@@ -919,7 +917,7 @@ def remove_from_cart(product_id):
         else:
             cart = get_guest_cart()
             original_cart_length = len(cart)
-            # Rimuovi solo l'articolo con la specifica taglia e product_id
+            
             cart = [product for product in cart if not (product['product_id'] == product_id and product['size'] == size)]
 
             if len(cart) == original_cart_length:
@@ -951,9 +949,9 @@ def save_guest_cart(cart):
 def view_cart(user_id):
     items = []
     colors_in_cart = set()
-    has_tshirt = False  # Flag per rilevare la presenza di una maglietta o canottiera
-    has_sweatshirt = False  # Flag per rilevare la presenza di una felpa
-    set_discount = 0.15  # Sconto del 15% per il set di maglietta + felpa
+    has_tshirt = False  
+    has_sweatshirt = False  
+    set_discount = 0.15 
 
     if user_id == 'guest':
         cart = get_guest_cart()
@@ -967,7 +965,7 @@ def view_cart(user_id):
             image_url = item['image_urls'][0] if 'image_urls' in item and item['image_urls'] else item.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg')
             price = item['price'] - item.get('discount', 0)
 
-            # Verifica se il prodotto è una maglietta o una felpa
+           
             if item['category'].lower() in ['magliette', 'cappelli']:
                 has_tshirt = True
             if item['category'].lower() == 'felpe':
@@ -981,14 +979,14 @@ def view_cart(user_id):
                 'price': price,
                 'size': product.get('size')
             })
-            # Aggiungi il colore dell'articolo al set
+            
             if 'color' in item:
                 colors_in_cart.add(item['color'])
 
     cart_item_count = sum(item['quantity'] for item in items)
     subtotal = sum(item['price'] * item['quantity'] for item in items)
 
-    # Applica lo sconto del set maglietta + felpa o canottiera + felpa
+   
     if has_tshirt and has_sweatshirt:
         discount_amount = subtotal * set_discount
     else:
@@ -996,10 +994,10 @@ def view_cart(user_id):
 
     subtotal_after_discount = subtotal - discount_amount
 
-    # Aggiungi la logica per ottenere prodotti suggeriti basati sul colore
+   
     recommended_products = []
     if colors_in_cart:
-        # Prendi prodotti di colore simile dal database
+        
         recommended_products = list(mongo.db.product.find({'color': {'$in': list(colors_in_cart)}}).limit(4))
 
     if request.headers.get('Accept') == 'application/json':
@@ -1019,8 +1017,8 @@ def view_cart(user_id):
             cart_item_count=cart_item_count, 
             subtotal=subtotal_after_discount, 
             discount_amount=discount_amount,
-            has_tshirt=has_tshirt,  # Passiamo questo flag al template
-            has_sweatshirt=has_sweatshirt,  # Passiamo questo flag al template
+            has_tshirt=has_tshirt,  
+            has_sweatshirt=has_sweatshirt,  
             recommended_products=recommended_products
         ))
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
@@ -1063,7 +1061,7 @@ def checkout():
     if request.method == 'POST':
         discount_code = request.form.get('discount_code', '').strip()
 
-        # Controlla se l'utente ha diritto al codice sconto e se il codice è valido
+        
         if discount_code == 'WELCOME10':
             if user_data and user_data.get('discount_eligible', True):
                 discount_code_applied = True
@@ -1074,7 +1072,7 @@ def checkout():
         flash('Il tuo carrello è vuoto. Aggiungi prodotti prima di procedere al checkout.', 'danger')
         return redirect(url_for('view_cart', user_id=user_id))
 
-    # Calcola i dettagli del carrello
+   
     for product in cart:
         item = mongo.db.product.find_one({'_id': ObjectId(product['product_id'])})
         if item:
@@ -1086,7 +1084,7 @@ def checkout():
             if not product['image_url'].startswith('/static/'):
                 product['image_url'] = f'/static/uploads/{product["image_url"]}'
 
-            # Controlla le categorie per determinare se è presente un set valido
+            
             if item['category'].lower() == 'magliette':
                 has_tshirt = True
             if item['category'].lower() == 'felpe':
@@ -1104,17 +1102,17 @@ def checkout():
 
     subtotal = sum(item['price'] * item['quantity'] for item in cart)
 
-    # Calcola lo sconto del set (maglietta + felpa) o (cappello + sacca di tela)
+    
     if (has_tshirt and has_sweatshirt) or (has_cap and has_tote_bag):
         set_discount_amount = round(subtotal * set_discount, 2)
     else:
         set_discount_amount = 0
 
-    # Applica lo sconto del codice "WELCOME10" se applicabile
+    
     if discount_code_applied:
         discount_amount = round(subtotal * registration_discount, 2)
 
-    # Scegli lo sconto più alto tra set_discount e registration_discount
+    
     total_discount_amount = max(set_discount_amount, discount_amount)
 
     total = round(subtotal - total_discount_amount, 2)
@@ -1122,7 +1120,7 @@ def checkout():
     total = round(total + shipping_cost, 2)
     cart_item_count = sum(item['quantity'] for item in cart)
 
-    # Restituisci solo il template parziale se la richiesta proviene da HTMX
+    
     if request.method == 'POST' and request.headers.get('HX-Request'):
         return render_template(
             'checkout_summary.html',
@@ -1159,7 +1157,7 @@ def create_order():
     cart = get_guest_cart() if user_id == 'guest' else mongo.db.users.find_one({'_id': ObjectId(user_id)})['cart']
     email = request.form.get('email') if user_id == 'guest' else mongo.db.users.find_one({'_id': ObjectId(user_id)})['email']
 
-    # Pulire i messaggi flash precedenti
+   
     session.pop('_flashes', None)
 
     if not cart:
@@ -1208,15 +1206,15 @@ def create_order():
             products_collection.update_one({"_id": ObjectId(product_id)}, {"$inc": {"purchases": quantity}})
         
         if user_id == 'guest':
-            save_guest_cart([])  # svuota il carrello degli ospiti
+            save_guest_cart([])  
         else:
-            mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': []}})  # svuota il carrello dell'utente
+            mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': []}}) 
 
         send_order_confirmation_email(email, order_id, cart, shipping_details)
         
         flash('Ordine effettuato con successo! Riceverai una conferma via email.', 'success')
 
-        # Reindirizzamento a una pagina di conferma ordine
+        
         return redirect(url_for('order_confirmation', order_id=str(order_id)))
         
     except Exception as e:
@@ -1238,24 +1236,24 @@ def send_order_confirmation_email(email, order_id, cart, shipping_details):
 
 @app.route('/order_confirmation/<order_id>', methods=['GET'])
 def order_confirmation(order_id):
-    # Trova l'ordine nel database
+    
     order = mongo.db.orders.find_one({'_id': ObjectId(order_id)})
 
     if not order:
         flash('Ordine non trovato.', 'danger')
         return redirect(url_for('index'))
 
-    # Aggiorna ogni elemento nel carrello con l'URL dell'immagine
+   
     for item in order['cart']:
         product = products_collection.find_one({'_id': ObjectId(item['product_id'])})
         if product:
-            # Verifica e assegna l'URL dell'immagine
+            
             if 'image_urls' in product and product['image_urls']:
-                item['image_url'] = product['image_urls'][0]  # Usa la prima immagine della lista
+                item['image_url'] = product['image_urls'][0]  
             else:
                 item['image_url'] = product.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg')
 
-    # Mostra la pagina di conferma ordine con i dettagli aggiornati
+    
     return render_template('order_confirmation.html', order=order)
 
 
@@ -1298,8 +1296,8 @@ def search():
             product['price'] = product['price'] - product['discount']
             flash_sale_products.append(product)
 
-    # Filtra i prodotti in offerta lampo (con sconto)
-    all_products = list(products_collection.find())  # Ottieni tutti i prodotti per trovare le offerte lampo
+   
+    all_products = list(products_collection.find())  
     for product in all_products:
         if product.get('discount', 0) > 0:
             product['original_price'] = product['price']
@@ -1323,13 +1321,13 @@ def product_detail(id):
         product['views'] = product.get('views', 0) + 1  # Aggiorna il valore delle visualizzazioni per il rendering
 
         product['_id'] = str(product['_id'])
-        product['quantity'] = product.get('quantity', 0)  # Assicurati che quantity sia un intero
-        product['purchases'] = product.get('purchases', 0)  # Gestisci il valore mancante di 'purchases'
+        product['quantity'] = product.get('quantity', 0)  
+        product['purchases'] = product.get('purchases', 0)  
 
         # Calcola il prezzo originale e quello scontato
         if product.get('discount', 0) > 0:
             product['original_price'] = product['price']  # Salva il prezzo originale
-            product['price'] = product['price'] - (product['price'] * product['discount'] / 100)  # Applica lo sconto
+            product['price'] = product['price'] - (product['price'] * product['discount'] / 100)  
         else:
             product['original_price'] = product['price']  # Assicura che 'original_price' venga impostato anche senza sconto
 
@@ -1359,7 +1357,7 @@ def product_detail(id):
 @app.route('/products/<product_id>/reviews', methods=['POST'])
 @login_required
 def add_review(product_id):
-    # Logga tutto il form per vedere cosa arriva
+    
     app.logger.info(f"Received form data: {request.form}")
     
     review_text = request.form.get('reviewText')
@@ -1409,13 +1407,13 @@ def add_review(product_id):
         'photo': photo_url  # Aggiungi l'URL della foto
     }
 
-    # Inserisci la recensione nella collezione `reviews`
+    # Inserisce la recensione nella collezione `reviews`
     mongo.db.reviews.insert_one(review)
 
     # Recupera il prodotto attuale per ottenere ulteriori dettagli
     product = mongo.db.product.find_one({'_id': ObjectId(product_id)})
 
-    # Definisci `image_url` per il prodotto
+    
     if 'image_urls' in product and product['image_urls']:
         image_url = product['image_urls'][0]  # Prendi la prima immagine dalla lista
     else:
@@ -1424,7 +1422,7 @@ def add_review(product_id):
     # Recupera tutte le recensioni del prodotto
     product_reviews = list(mongo.db.reviews.find({'product_id': ObjectId(product_id)}))
 
-    # Passa il prodotto, le recensioni e `image_url` al template
+    
     return render_template('reviews.html', reviews=product_reviews, product=product, image_url=image_url), 200
 
 @app.route('/products/<product_id>/upload_photo', methods=['POST'])
@@ -1463,7 +1461,7 @@ def delete_product(product_id):
             flash('Prodotto non trovato!', 'danger')
             return jsonify({'message': 'Product not found'}), 404
         
-        # Se il prodotto esiste, prova a eliminarlo
+       
         result = products_collection.delete_one({'_id': ObjectId(product_id)})
         if result.deleted_count == 1:
             flash('Prodotto eliminato con successo!', 'success')
@@ -1478,7 +1476,7 @@ def delete_product(product_id):
         flash(f'Errore durante l\'eliminazione del prodotto: {str(e)}', 'danger')
         return jsonify({'message': str(e)}), 500
 
-    # Ritorna un messaggio di successo in caso di richiesta HTMX
+    
     if 'HX-Request' in request.headers:
         return render_template_string(
             '''
@@ -1540,11 +1538,11 @@ def shipping_progress():
                 price = product['price'] - product.get('discount', 0)
                 cart_total += item['quantity'] * price
 
-    shipping_threshold = 40  # Soglia per la spedizione gratuita
+    shipping_threshold = 40  
     amount_remaining = max(0, shipping_threshold - cart_total)
     progress_percentage = min(100, (cart_total / shipping_threshold) * 100)
 
-    # Restituiamo l'intera sezione con testo e barra
+    
     response_html = render_template_string(
         '''
         <div id="shipping-progress-section" class="free-shipping-section">
@@ -1668,7 +1666,7 @@ def toggle_filters():
         button_text = "Mostra Filtri"
         new_is_visible = 'false'
     else:
-        # Mostra i filtri come sidebar laterale con X per chiudere
+      
         filters_html = '''
         <div class="filter-sidebar visible">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1784,11 +1782,11 @@ def get_filtered_products():
             product['original_price'] = product['price']
             product['price'] = product['price'] - product['discount']
 
-    # Verifica se è una richiesta HTMX
+    
     if request.headers.get('HX-Request') == 'true':
         return render_template('partials/product_grid.html', products=products)
 
-    # Se non è una richiesta HTMX, rendi la pagina completa
+    
     user_id = session.get('user_id')
     cart_item_count = get_cart_item_count(user_id)
 
@@ -1810,25 +1808,25 @@ class CheckoutForm(FlaskForm):
 
 @app.route('/user_orders', methods=['GET'])
 def user_orders():
-    # Verifica se l'ID utente è presente nella sessione
+    
     user_id = session.get('user_id')
     
     if not user_id:
-        # Se non c'è un ID utente, l'utente non è loggato
+        
         flash('Devi essere loggato per visualizzare i tuoi ordini.', 'danger')
         return redirect(url_for('login'))
     
-    # Log per vedere l'ID utente che stiamo utilizzando
+    
     app.logger.info(f"Recupero ordini per l'utente con ID: {user_id}")
     
-    # Recupera gli ordini dell'utente
+   
     orders_cursor = mongo.db.orders.find({'user_id': user_id}).sort('created_at', -1)
     
-    # Converte il cursor in una lista e ottieni il numero di ordini
+   
     orders = list(orders_cursor)
     app.logger.info(f"Numero di ordini trovati: {len(orders)}")
     
-    # Calcola il numero degli articoli nel carrello
+    
     cart_item_count = get_cart_item_count(user_id)
     
     # Renderizza la pagina degli ordini
@@ -1836,7 +1834,7 @@ def user_orders():
 
 @app.route('/continue_as_guest', methods=['GET'])
 def continue_as_guest():
-    #imuove la modale senza cambiare il contenuto del checkout.
+    
     return '<div></div>', 200  
 
 
@@ -1867,22 +1865,21 @@ def delete_review(review_id):
         # Log the attributes of current_user
         app.logger.info(f"Current user object: {dir(current_user)}")
 
-        # Trova la recensione
         review = mongo.db.reviews.find_one({'_id': ObjectId(review_id)})
         if not review:
             return '<div hx-swap-oob="true" class="alert alert-danger" role="alert">Recensione non trovata.</div>', 404
 
-        # Verifica se l'utente corrente è l'autore della recensione usando `get_id()`
+       
         if str(review['user_id']) != str(current_user.get_id()):
             return '<div hx-swap-oob="true" class="alert alert-danger" role="alert">Non sei autorizzato a eliminare questa recensione.</div>', 403
 
-        # Elimina la recensione
+        
         mongo.db.reviews.delete_one({'_id': ObjectId(review_id)})
 
         # Recupera tutte le recensioni del prodotto
         product_reviews = list(mongo.db.reviews.find({'product_id': review['product_id']}))
 
-        # Rendi le recensioni aggiornate
+        
         return render_template('reviews.html', reviews=product_reviews), 200
     except Exception as e:
         app.logger.error(f"Errore durante l'eliminazione della recensione: {str(e)}")
@@ -1898,7 +1895,7 @@ def apply_discount():
     valid_discount_code = "WELCOME10"
     discount_percentage = 0.10
 
-    # Ottieni il carrello
+    
     if user_id == 'guest':
         cart = get_guest_cart()
     else:
@@ -1914,19 +1911,19 @@ def apply_discount():
     if discount_code == valid_discount_code:
         discount_code_applied = True
 
-    # Calcola subtotale, sconto e totale
+   
     subtotal = sum(item['price'] * item['quantity'] for item in cart)
     discount_amount = subtotal * discount_percentage if discount_code_applied else 0
     total = subtotal - discount_amount
     shipping_cost = 0 if subtotal >= 40 else 5
     total += shipping_cost
 
-    # Calcola la quantità di articoli nel carrello
+   
     cart_item_count = sum(item['quantity'] for item in cart)
 
-    # Rendi il template con il riepilogo dell'ordine (order_summary.html)
+    
     return render_template(
-        'order_summary.html',  # Modifica per restituire solo il riepilogo
+        'order_summary.html',  
         cart=cart,
         subtotal=subtotal,
         discount_amount=discount_amount,
@@ -1942,7 +1939,7 @@ def apply_discount():
 @app.route('/flash_sale_products', methods=['GET'])
 def flash_sale_products():
     page = int(request.args.get('page', 1))
-    print(f"Ricevuta richiesta per la pagina: {page}")  # Log di debug
+    print(f"Ricevuta richiesta per la pagina: {page}")  
 
     per_page = 3
     skip = (page - 1) * per_page
@@ -1974,16 +1971,16 @@ def flash_sale_products():
 @app.route('/api/load_more_products', methods=['GET'])
 def load_more_products():
     current_page = int(request.args.get('current_page', 1))
-    per_page = 8  # Number of products per page
-    skip_count = current_page * per_page  # Adjusted skip count
+    per_page = 8 
+    skip_count = current_page * per_page  
 
-    # Load products for the next page
+   
     products = list(mongo.db.product.find().skip(skip_count).limit(per_page))
 
     best_sellers = get_best_sellers()
     best_seller_ids = {str(product['_id']) for product in best_sellers}
 
-    # Format products
+    
     for product in products:
         product['_id'] = str(product['_id'])
         product['is_best_seller'] = product['_id'] in best_seller_ids
@@ -1991,14 +1988,14 @@ def load_more_products():
             product['original_price'] = product['price']
             product['price'] = product['price'] - (product['price'] * product['discount'] / 100)
 
-    # Check if there are more products to load
+  
     total_products = mongo.db.product.count_documents({})
     has_more_products = (skip_count + per_page) < total_products
 
-    # Render the products HTML
+   
     rendered_products = render_template('product_partial.html', products=products)
 
-    # Return only the product HTML if there are more products
+    
     if has_more_products:
         button_html = f'''
         <button id="load-more-button" class="btn btn-outline-dark" 
@@ -2009,10 +2006,10 @@ def load_more_products():
             Carica altro
         </button>
         '''
-        # Return rendered products and the button separately to prevent duplication
+        
         return f'{rendered_products}<div hx-swap-oob="true" id="load-more-container">{button_html}</div>'
     else:
-        # If no more products, hide the button
+       
         return f'{rendered_products}<div hx-swap-oob="true" id="load-more-container" style="display: none;"></div>'
 
 
