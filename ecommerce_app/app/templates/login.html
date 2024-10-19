@@ -12,31 +12,22 @@
 
 <body>
     <div id="guest-alert-container" hx-get="{{ url_for('guest_alert') }}" hx-trigger="load"></div>
-<!-- Free Shipping Text and Progress Bar on the Same Line -->
-<div id="shipping-progress-section"
-class="free-shipping-section"
-hx-get="/api/shipping_progress"
-hx-trigger="load, event:updateShipping"
-hx-swap="outerHTML">
-<span class="free-shipping-text" id="shipping-text">
-   Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
-</span>
-<div class="progress-container">
-   <div class="progress-bar-custom" id="progress-bar" style="width: {{ progress_percentage | default(0) }}%;"></div>
-</div>
-</div>
- <!-- Pulsante che attiva la richiesta HTMX -->
- <button id="discount-button" 
- class="btn btn-primary rounded-pill shadow-lg discount-button"
- hx-get="/show_discount_modal"
- hx-target="#discount-modal .modal-body"
- hx-trigger="click"
- hx-swap="innerHTML"
- hx-on="htmx:afterSwap: bootstrap.Modal.getOrCreateInstance(document.getElementById('discount-modal')).show()">
- Vuoi uno sconto del 15%?
- </button>
-    
-  <!-- Navbar -->
+    <!-- Free Shipping Text and Progress Bar on the Same Line -->
+    <div id="shipping-progress-section" class="free-shipping-section" hx-get="/api/shipping_progress" hx-trigger="load, event:updateShipping" hx-swap="outerHTML">
+        <span class="free-shipping-text" id="shipping-text">
+            Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
+        </span>
+        <div class="progress-container">
+            <div class="progress-bar-custom" id="progress-bar" style="width: {{ progress_percentage | default(0) }}%;"></div>
+        </div>
+    </div>
+
+    <!-- Pulsante che attiva la richiesta HTMX -->
+    <button id="discount-button" class="btn btn-primary rounded-pill shadow-lg discount-button" hx-get="/show_discount_modal" hx-target="#discount-modal .modal-body" hx-trigger="click" hx-swap="innerHTML" hx-on="htmx:afterSwap: bootstrap.Modal.getOrCreateInstance(document.getElementById('discount-modal')).show()">
+        Vuoi uno sconto del 15%?
+    </button>
+
+     <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
     <div class="container px-4 px-lg-5">
         <a class="navbar-brand text-success fw-bold" href="{{ url_for('index') }}">FlowCommerce</a>
@@ -108,7 +99,6 @@ hx-swap="outerHTML">
     </div>
 </nav>
 
-
     <div class="container mt-5">
         <h2 class="mb-4">Login</h2>
         <hr class="horizontal-divider">
@@ -118,11 +108,11 @@ hx-swap="outerHTML">
                 <div id="login-container">
                     {% include '_login_form.html' %}
                     {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} mt-3" role="alert">{{ message }}</div>
-                    {% endfor %}
-                    {% endif %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} mt-3" role="alert">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
                     {% endwith %}
                 </div>
             </div>
@@ -136,10 +126,8 @@ hx-swap="outerHTML">
             <div class="col-md-5 d-flex align-items-center">
                 <div class="info-box p-3 bg-dark text-white">
                     <h5 class="fw-bold">Benvenuto su MyShop</h5>
-                    <p class="mb-3">Accedi per scoprire nuove offerte e completare i tuoi acquisti in modo rapido e
-                        sicuro.</p>
-                    <p>Non hai un account? <a class="text-light fw-bold"
-                            href="{{ url_for('register', next=request.args.get('next', 'index')) }}">Registrati qui</a></p>
+                    <p class="mb-3">Accedi per scoprire nuove offerte e completare i tuoi acquisti in modo rapido e sicuro.</p>
+                    <p>Non hai un account? <a class="text-light fw-bold" href="{{ url_for('register', next=request.args.get('next', 'index')) }}">Registrati qui</a></p>
                 </div>
             </div>
             <hr class="horizontal-divider">

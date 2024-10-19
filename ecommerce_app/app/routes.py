@@ -467,7 +467,7 @@ def get_users():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    next_page = request.args.get('next', 'index')  
+    next_page = request.args.get('next', 'index')
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -477,7 +477,7 @@ def login():
         if not user:
             flash('Username does not exist', 'danger')
             if 'HX-Request' in request.headers:
-                return render_template('_login_form.html', next=next_page), 200  
+                return render_template('_login_form.html', next=next_page), 200
             else:
                 return render_template('login.html', next=next_page)
 
@@ -496,15 +496,23 @@ def login():
 
         flash('Login successful!', 'success')
 
-        
+        # Redirigere alla pagina di checkout se richiesto
         redirect_url = url_for('checkout') if next_page == 'checkout' else url_for(next_page)
         if 'HX-Request' in request.headers:
             return '', 204, {'HX-Redirect': redirect_url}
         else:
             return redirect(redirect_url)
 
-    cart_item_count = get_cart_item_count(session.get('user_id')) if session.get('user_id') else 0
+    # Controllo del carrello per utenti non loggati e loggati
+    if 'user_id' in session:
+        # Utente autenticato, usa il suo carrello
+        cart_item_count = get_cart_item_count(session['user_id'])
+    else:
+        # Utente ospite, controlla se ha articoli nel carrello associato alla sessione
+        cart_item_count = len(session.get('guest_cart', []))  # guest_cart potrebbe essere una lista di articoli
+    
     return render_template('login.html', next=next_page, cart_item_count=cart_item_count)
+
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -951,6 +959,8 @@ def view_cart(user_id):
     colors_in_cart = set()
     has_tshirt = False  
     has_sweatshirt = False  
+    has_cap = False  
+    has_bag = False  
     set_discount = 0.15 
 
     if user_id == 'guest':
@@ -965,11 +975,14 @@ def view_cart(user_id):
             image_url = item['image_urls'][0] if 'image_urls' in item and item['image_urls'] else item.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg')
             price = item['price'] - item.get('discount', 0)
 
-           
             if item['category'].lower() in ['magliette', 'cappelli']:
                 has_tshirt = True
             if item['category'].lower() == 'felpe':
                 has_sweatshirt = True
+            if item['category'].lower() == 'cappelli':
+                has_cap = True
+            if item['category'].lower() == 'sacche di tela':
+                has_bag = True
 
             items.append({
                 'product_id': str(item['_id']),
@@ -986,7 +999,6 @@ def view_cart(user_id):
     cart_item_count = sum(item['quantity'] for item in items)
     subtotal = sum(item['price'] * item['quantity'] for item in items)
 
-   
     if has_tshirt and has_sweatshirt:
         discount_amount = subtotal * set_discount
     else:
@@ -994,11 +1006,19 @@ def view_cart(user_id):
 
     subtotal_after_discount = subtotal - discount_amount
 
-   
     recommended_products = []
-    if colors_in_cart:
-        
-        recommended_products = list(mongo.db.product.find({'color': {'$in': list(colors_in_cart)}}).limit(4))
+    if has_sweatshirt:
+        # Se ha una felpa, raccomanda cappelli o sacche
+        recommended_products = list(mongo.db.product.find({'category': {'$in': ['Cappelli', 'Sacche di tela']}}).limit(4))
+    elif has_tshirt:
+        # Se ha una maglietta, raccomanda felpe o sacche
+        recommended_products = list(mongo.db.product.find({'category': {'$in': ['Felpe', 'Sacche di tela']}}).limit(4))
+    elif has_cap:
+        # Se ha un cappello, raccomanda felpe o magliette
+        recommended_products = list(mongo.db.product.find({'category': {'$in': ['Felpe', 'Magliette']}}).limit(4))
+    elif has_bag:
+        # Se ha una sacca, raccomanda magliette o cappelli
+        recommended_products = list(mongo.db.product.find({'category': {'$in': ['Magliette', 'Cappelli']}}).limit(4))
 
     if request.headers.get('Accept') == 'application/json':
         return jsonify({
@@ -1007,8 +1027,10 @@ def view_cart(user_id):
             'subtotal': subtotal_after_discount,
             'discount_amount': discount_amount,
             'recommended_products': recommended_products,
-            'has_tshirt': has_tshirt,
-            'has_sweatshirt': has_sweatshirt
+            'has_tshirt': has_tshirt,  
+            'has_sweatshirt': has_sweatshirt,
+            'has_cap': has_cap,
+            'has_bag': has_bag
         })
     else:
         response = make_response(render_template(
@@ -1023,6 +1045,7 @@ def view_cart(user_id):
         ))
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
         return response
+
 
 
     

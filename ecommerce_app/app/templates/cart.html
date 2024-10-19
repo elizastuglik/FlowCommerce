@@ -13,7 +13,7 @@
 
 <body>
     
-  <!-- Navbar -->
+   <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
     <div class="container px-4 px-lg-5">
         <a class="navbar-brand text-success fw-bold" href="{{ url_for('index') }}">FlowCommerce</a>
@@ -178,14 +178,14 @@
     
                 <!-- Messaggio motivazionale, sempre visibile -->
                 <div class="alert alert-info" id="motivational-message">
-                    {% if has_tshirt and not has_sweatshirt %}
-                    Aggiungi una felpa per ottenere il 15% di sconto sul tuo set!
-                    {% elif has_sweatshirt and not has_tshirt %}
-                    Aggiungi una maglietta o una canottiera per ottenere il 15% di sconto sul tuo set!
+                    {% if has_sweatshirt and not has_tshirt %}
+                        Aggiungi un cappellino o una sacca di tela per ottenere il 15% di sconto sul tuo ordine!
+                    {% elif has_tshirt and not has_sweatshirt %}
+                        Aggiungi una felpa per ottenere il 15% di sconto sul tuo ordine!
                     {% elif has_tshirt and has_sweatshirt %}
-                    Complimenti! Hai ottenuto il 15% di sconto sul tuo set!
+                        Complimenti! Hai ottenuto il 15% di sconto sul tuo ordine!
                     {% else %}
-                    Aggiungi una felpa e una maglietta per ottenere uno sconto del 15%!
+                        Aggiungi una felpa e una maglietta per ottenere uno sconto del 15% sul tuo ordine!
                     {% endif %}
                 </div>
     

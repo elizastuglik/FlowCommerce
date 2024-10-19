@@ -71,7 +71,7 @@ Vuoi uno sconto del 15%?
         <div class="progress-bar-custom" id="progress-bar" style="width: 0%;"></div>
     </div>
 </div>
-   <!-- Navbar -->
+    <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
     <div class="container px-4 px-lg-5">
         <a class="navbar-brand text-success fw-bold" href="{{ url_for('index') }}">FlowCommerce</a>
@@ -82,9 +82,6 @@ Vuoi uno sconto del 15%?
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link text-dark" aria-current="page" href="{{ url_for('index') }}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-dark" href="#!">About</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Shop</a>
@@ -146,7 +143,6 @@ Vuoi uno sconto del 15%?
     </div>
 </nav>
 
-
   <!-- Header Dinamico con Video di Background -->
   <header class="header-video-container">
     <video autoplay muted loop playsinline>
@@ -154,10 +150,19 @@ Vuoi uno sconto del 15%?
         Il tuo browser non supporta il tag video.
     </video>
     <div class="header-content">
-        <h1 class="display-4 fw-bolder">Scopri le Nostre {{ category.capitalize() }}</h1>
+        <h1 class="display-4 fw-bolder">
+            {% if category in ['felpe', 'magliette', 'sacche di tela'] %}
+                Scopri le Nostre {{ category.capitalize() }}
+            {% elif category in ['cappelli', 'calzini'] %}
+                Scopri i Nostri {{ category.capitalize() }}
+            {% else %}
+                Scopri i Nostri Prodotti
+            {% endif %}
+        </h1>
         <p class="lead fw-normal text-white-50 mb-4">Perfette per ogni occasione</p>
     </div>
 </header>
+
 
 
     <!-- Main Content Dinamico con Filtri -->
