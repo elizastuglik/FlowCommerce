@@ -12197,4 +12197,8 @@ hr, .horizontal-divider {
       box-shadow: none; 
   }
 
- 
+  .product-image-vertical {
+    object-fit: contain;
+    max-height: 500px;
+    width: auto;
+}

@@ -112,7 +112,9 @@
                     <div class="carousel-inner">
                         {% for image_url in product.image_urls %}
                             <div class="carousel-item {% if loop.index == 1 %}active{% endif %}">
-                                <img src="{{ image_url }}" class="d-block w-100" alt="{{ product.name }}">
+                                <img src="{{ image_url }}" 
+                                     class="d-block {% if product.category == 'felpe' %}product-image-vertical{% else %}w-100{% endif %}" 
+                                     alt="{{ product.name }}">
                             </div>
                         {% endfor %}
                     </div>
@@ -124,7 +126,7 @@
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Next</span>
                     </button>
-
+                
                     <!-- Best Seller Badge -->
                     {% if product.is_best_seller %}
                     <span class="badge bg-warning text-dark position-absolute top-0 start-0 m-3 p-2 best-seller-badge">
