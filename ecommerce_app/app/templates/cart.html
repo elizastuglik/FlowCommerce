@@ -13,7 +13,7 @@
 
 <body>
     
-   <!-- Navbar -->
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom">
     <div class="container px-4 px-lg-5">
         <a class="navbar-brand text-success fw-bold" href="{{ url_for('index') }}">FlowCommerce</a>
@@ -84,8 +84,9 @@
         </div>
     </div>
 </nav>
- <!-- Free Shipping Text and Progress Bar on the Same Line -->
- <div id="shipping-progress-section"
+
+<!-- Free Shipping Text and Progress Bar on the Same Line -->
+<div id="shipping-progress-section"
  class="free-shipping-section"
  hx-get="/api/shipping_progress"
  hx-trigger="load, event:updateShipping"
@@ -100,138 +101,145 @@
  <div class="progress-container">
     <div class="progress-bar-custom" id="progress-bar" style="width: 0%;"></div>
  </div>
- </div>
-    <div class="container mt-5" id="cart-content">
-        <h2>Il tuo carrello</h2>
-        <hr class="horizontal-divider">
-        <div class="row">
-            <!-- Products List -->
-            <div class="col-md-8">
-                {% if cart %}
-                <ul class="list-group mb-3" id="cart-items">
-                    {% for product in cart %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center"
-                        id="cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}">
-                        <a href="{{ url_for('product_detail', id=product['product_id']) }}">
-                            <img src="{{ product['image_url'] }}" alt="{{ product['name'] }}" class="img-thumbnail"
-                                style="max-width: 170px;">
-                        </a>
-                        <div class="d-flex align-items-center" style="gap: 5px;">
-                            <span>{{ product['name'] }}</span>
-                            <span>{{ product['size'] }}</span>
+</div>
 
-                            <span class="quantity-control">
-                                <button class="quantity-btn"
-                                    hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}"
-                                    hx-vals='{"quantity": {{ product["quantity"] - 1 }}, "size": "{{ product["size"] }}" }'
-                                    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}"
-                                    hx-swap="outerHTML">-</button>
-                                <span class="quantity-number">{{ product['quantity'] }}</span>
-                                <button class="quantity-btn"
-                                    hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}"
-                                    hx-vals='{"quantity": {{ product["quantity"] + 1 }}, "size": "{{ product["size"] }}" }'
-                                    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}"
-                                    hx-swap="outerHTML">+</button>
-                            </span>
-                            
-                            <span>€{{ product['price'] }}</span>
-                        </div>
-                        <button class="btn btn-danger btn-sm" 
-                        style="flex-shrink: 0;" 
-                            hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
-                            hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
-                            hx-swap="outerHTML">Remove</button>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p>Il tuo carrello è vuoto.</p>
-                {% endif %}
-            </div>
-    
-            <!-- Divider -->
-            <div class="col-md-1 d-flex justify-content-center">
-                <div class="vertical-divider"></div>
-            </div>
-    
-            <!-- Cart Summary -->
-            <div class="col-md-3">
-                <!-- Subtotale originale -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="me-2">Subtotale originale</h4>
-                    <h4 id="cart-subtotal">€{{ subtotal + discount_amount }}</h4>
-                </div>
-    
-                <!-- Sconto se applicabile -->
-                {% if discount_amount > 0 %}
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="me-2">Sconto applicato</h4>
-                    <h4 id="cart-discount">-€{{ discount_amount }}</h4>
-                </div>
-                {% endif %}
-    
-                <!-- Totale dopo lo sconto -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="me-2">Totale</h4>
-                    <h4 id="cart-total">€{{ subtotal }}</h4>
-                </div>
-    
-                <!-- Messaggio motivazionale, sempre visibile -->
-                <div class="alert alert-info" id="motivational-message">
-                    {% if has_sweatshirt and not has_tshirt %}
-                        Aggiungi un cappellino o una sacca di tela per ottenere il 15% di sconto sul tuo ordine!
-                    {% elif has_tshirt and not has_sweatshirt %}
-                        Aggiungi una felpa per ottenere il 15% di sconto sul tuo ordine!
-                    {% elif has_tshirt and has_sweatshirt %}
-                        Complimenti! Hai ottenuto il 15% di sconto sul tuo ordine!
-                    {% else %}
-                        Aggiungi una felpa e una maglietta per ottenere uno sconto del 15% sul tuo ordine!
-                    {% endif %}
-                </div>
-    
-                {% if cart %}
-                <a class="btn btn-primary" href="{{ url_for('checkout') }}">Procedi all'ordine</a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    </div>
-
-    <!-- Sezione "Potrebbe anche interessarti", mostrata solo se il carrello non è vuoto -->
-    {% if cart %}
-    <div class="container mt-5">
-        <hr class="horizontal-divider">
-        <h3 class="mt-5">Potrebbe anche interessarti</h3>
-        <div class="row">
-            {% for product in recommended_products %}
-            <div class="col-md-3 col-sm-6 mb-3">
-                <div class="card">
-                    <a href="{{ url_for('product_detail', id=product['_id']) }}">
-                        <img src="{{ product['image_urls'][0] if 'image_urls' in product and product['image_urls'] else product.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg') }}"
-                            class="card-img-top" alt="{{ product['name'] }}">
+<div class="container mt-5" id="cart-content">
+    <h2>Il tuo carrello</h2>
+    <hr class="horizontal-divider">
+    <div class="row">
+        <!-- Products List -->
+        <div class="col-md-8">
+            {% if cart %}
+            <ul class="list-group mb-3" id="cart-items">
+                {% for product in cart %}
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    id="cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}">
+                    <a href="{{ url_for('product_detail', id=product['product_id']) }}">
+                        <img src="{{ product['image_url'] }}" alt="{{ product['name'] }}" class="img-thumbnail"
+                            style="max-width: 170px;">
                     </a>
-                    <div class="card-body">
-                        <h5 class="card-title">{{ product['name'] }}</h5>
-                        <p class="card-text">€{{ product['price'] }}</p>
-                        <a href="{{ url_for('product_detail', id=product['_id']) }}" class="btn btn-primary">Vedi
-                            Prodotto</a>
+                    <div class="d-flex align-items-center" style="gap: 5px;">
+                        <span>{{ product['name'] }}</span>
+                        <span>{{ product['size'] }}</span>
+
+                        <span class="quantity-control">
+                            <button class="quantity-btn"
+                                hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}"
+                                hx-vals='{"quantity": {{ product["quantity"] - 1 }}, "size": "{{ product["size"] }}" }'
+                                hx-trigger="click"
+                                hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}"
+                                hx-trigger="event:updateShipping"
+                                hx-swap="outerHTML">-</button>
+                            <span class="quantity-number">{{ product['quantity'] }}</span>
+                            <button class="quantity-btn"
+                                hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}"
+                                hx-vals='{"quantity": {{ product["quantity"] + 1 }}, "size": "{{ product["size"] }}" }'
+                                hx-trigger="click"
+                                hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}"
+                                hx-trigger="event:updateShipping"
+                                hx-swap="outerHTML">+</button>
+                        </span>
+                        
+                        <span>€{{ product['price'] }}</span>
                     </div>
-                </div>
+                    
+                    <button class="btn btn-danger btn-sm" 
+                    style="flex-shrink: 0;" 
+                        hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
+                        hx-trigger="event:updateShipping"
+                        hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+                        hx-swap="outerHTML">Remove</button>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>Il tuo carrello è vuoto.</p>
+            {% endif %}
+        </div>
+
+        <!-- Divider -->
+        <div class="col-md-1 d-flex justify-content-center">
+            <div class="vertical-divider"></div>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="col-md-3">
+            <!-- Subtotale originale -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="me-2">Subtotale originale</h4>
+    <h4 id="cart-subtotal">€{{ subtotal + discount_amount }}</h4>
+</div>
+
+<!-- Sconto se applicabile -->
+{% if discount_amount > 0 %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="me-2">Sconto applicato</h4>
+    <h4 id="cart-discount">-€{{ discount_amount }}</h4>
+</div>
+{% endif %}
+
+<!-- Totale dopo lo sconto -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="me-2">Totale</h4>
+    <h4 id="cart-total">€{{ subtotal }}</h4>
+</div>
+
+            <!-- Messaggio motivazionale, sempre visibile -->
+            <div class="alert alert-info" id="motivational-message">
+                {% if has_sweatshirt and not has_tshirt %}
+                    Aggiungi un cappellino o una sacca di tela per ottenere il 15% di sconto sul tuo ordine!
+                {% elif has_tshirt and not has_sweatshirt %}
+                    Aggiungi una felpa per ottenere il 15% di sconto sul tuo ordine!
+                {% elif has_tshirt and has_sweatshirt %}
+                    Complimenti! Hai ottenuto il 15% di sconto sul tuo ordine!
+                {% else %}
+                    Aggiungi una felpa e una maglietta per ottenere uno sconto del 15% sul tuo ordine!
+                {% endif %}
             </div>
-            {% endfor %}
+
+            {% if cart %}
+            <a class="btn btn-primary" href="{{ url_for('checkout') }}">Procedi all'ordine</a>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
-    
-    <footer class="mt-auto py-3 bg-dark text-white text-center">
-        <div class="container">
-            <p class="m-0 small">Copyright &copy; FlowCommerce</p>
-        </div>
-    </footer>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</div>
+
+<!-- Sezione "Potrebbe anche interessarti", mostrata solo se il carrello non è vuoto -->
+{% if cart %}
+<div class="container mt-5">
+    <hr class="horizontal-divider">
+    <h3 class="mt-5">Potrebbe anche interessarti</h3>
+    <div class="row">
+        {% for product in recommended_products %}
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card">
+                <a href="{{ url_for('product_detail', id=product['_id']) }}">
+                    <img src="{{ product['image_urls'][0] if 'image_urls' in product and product['image_urls'] else product.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg') }}"
+                        class="card-img-top" alt="{{ product['name'] }}">
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title">{{ product['name'] }}</h5>
+                    <p class="card-text">€{{ product['price'] }}</p>
+                    <a href="{{ url_for('product_detail', id=product['_id']) }}" class="btn btn-primary">Vedi
+                        Prodotto</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<footer class="mt-auto py-3 bg-dark text-white text-center">
+    <div class="container">
+        <p class="m-0 small">Copyright &copy; FlowCommerce</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/htmx.org@1.6.1"></script>
 </body>
 
 </html>

@@ -1,40 +1,52 @@
-<li class="list-group-item d-flex justify-content-between align-items-center" id="cart-item-{{ product['product_id'] }}">
+<li class="list-group-item d-flex justify-content-between align-items-center"
+    id="cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}">
     <a href="{{ url_for('product_detail', id=product['product_id']) }}">
         <img src="{{ product['image_url'] }}" alt="{{ product['name'] }}" class="img-thumbnail" style="max-width: 170px;">
     </a>
     <div class="d-flex align-items-center" style="gap: 5px;">
-    <span>{{ product['name'] }}</span>
-    <span>{{ product['size'] }}</span>
-    <span class="quantity-control">
-        <button class="quantity-btn" 
-                hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}" 
-                hx-vals='{"quantity": {{ product["quantity"] - 1 }} }' 
-                hx-target="#cart-item-{{ product['product_id'] }}" 
-                hx-swap="outerHTML">-</button>
-        <span class="quantity-number">{{ product['quantity'] }}</span>
-        <button class="quantity-btn" 
-                hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}" 
-                hx-vals='{"quantity": {{ product["quantity"] + 1 }} }' 
-                hx-target="#cart-item-{{ product['product_id'] }}" 
-                hx-swap="outerHTML">+</button>
-    </span>
+        <span>{{ product['name'] }}</span>
+        <span>{{ product['size'] }}</span>
+        <span class="quantity-control">
+            <button class="quantity-btn" 
+                    hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}" 
+                    hx-vals='{"quantity": {{ product["quantity"] - 1 }} }' 
+                    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+                    hx-swap="outerHTML"
+                    hx-trigger="click">-</button>
+            <span class="quantity-number">{{ product['quantity'] }}</span>
+            <button class="quantity-btn" 
+                    hx-put="{{ url_for('update_cart_item', product_id=product['product_id']) }}" 
+                    hx-vals='{"quantity": {{ product["quantity"] + 1 }} }' 
+                    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+                    hx-swap="outerHTML"
+                    hx-trigger="click">+</button>
+        </span>
 
-    {% if product.get('original_price') and product['original_price'] > product['price'] %}
-        <span class="text-muted text-decoration-line-through">€{{ product['original_price'] }}</span>
-        <span class="text-danger">€{{ product['price'] }}</span>
-    {% else %}
-        <span>€{{ product['price'] }}</span>
+        {% if product.get('original_price') and product['original_price'] > product['price'] %}
+            <span class="text-muted text-decoration-line-through">€{{ product['original_price'] }}</span>
+            <span class="text-danger">€{{ product['price'] }}</span>
+        {% else %}
+            <span>€{{ product['price'] }}</span>
+        {% endif %}
     </div>
-    {% endif %}
 
     <button class="btn btn-danger btn-sm" 
-            hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}" 
-            hx-target="#cart-item-{{ product['product_id'] }}" 
-            hx-swap="outerHTML">Remove</button>
+        hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
+        hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+        hx-swap="outerHTML">Remove</button>
 </li>
+
 
 <!-- Badge del Carrello -->
 <span class="badge bg-dark text-white ms-1 rounded-pill" id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
 
 <!-- Subtotale -->
-<h4 id="cart-subtotal" hx-swap-oob="true">Subtotale: €{{ subtotal }}</h4>
+<h4 id="cart-subtotal" hx-swap-oob="true"> €{{ subtotal }}</h4>
+
+<!-- Sconto -->
+{% if discount > 0 %}
+    <h4 id="cart-discount" class="text-success" hx-swap-oob="true"> -€{{ discount }}</h4>
+{% endif %}
+
+<!-- Totale -->
+<h4 id="cart-total" hx-swap-oob="true">€{{ total }}</h4>

@@ -1,13 +1,4 @@
 <div id="login-form">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
     <form method="post" action="{{ url_for('login') }}" hx-post="{{ url_for('login') }}" hx-target="#login-form" hx-swap="outerHTML">
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>

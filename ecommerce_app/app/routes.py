@@ -476,17 +476,11 @@ def login():
 
         if not user:
             flash('Username does not exist', 'danger')
-            if 'HX-Request' in request.headers:
-                return render_template('_login_form.html', next=next_page), 200
-            else:
-                return render_template('login.html', next=next_page)
+            return handle_login_response(next_page)
 
         if not check_password_hash(user['password'], password):
             flash('Invalid password', 'danger')
-            if 'HX-Request' in request.headers:
-                return render_template('_login_form.html', next=next_page), 200
-            else:
-                return render_template('login.html', next=next_page)
+            return handle_login_response(next_page)
 
         # Inizializzazione della sessione utente
         session['user_id'] = str(user['_id'])
@@ -504,15 +498,16 @@ def login():
             return redirect(redirect_url)
 
     # Controllo del carrello per utenti non loggati e loggati
-    if 'user_id' in session:
-        # Utente autenticato, usa il suo carrello
-        cart_item_count = get_cart_item_count(session['user_id'])
-    else:
-        # Utente ospite, controlla se ha articoli nel carrello associato alla sessione
-        cart_item_count = len(session.get('guest_cart', []))  # guest_cart potrebbe essere una lista di articoli
-    
+    cart_item_count = get_cart_item_count(session.get('user_id'))
+
     return render_template('login.html', next=next_page, cart_item_count=cart_item_count)
 
+def handle_login_response(next_page):
+    """Funzione per gestire la risposta del login in caso di errore."""
+    if 'HX-Request' in request.headers:
+        return render_template('_login_form.html', next=next_page), 200
+    else:
+        return render_template('login.html', next=next_page)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -738,6 +733,8 @@ def add_to_cart(user_id):
     
     products_collection.update_one({"_id": ObjectId(product_id)}, {"$inc": {"purchases": quantity}})
 
+ 
+
     response_html = render_template_string(
         '''
         <div class="cart-preview show p-3 border shadow-sm" id="cart-preview">
@@ -772,12 +769,21 @@ def add_to_cart(user_id):
         cart_item_count=cart_item_count
     )
 
-    response = make_response(response_html)
+    # Calcola la barra di spedizione e aggiorna il suo contenuto
+    shipping_progress_html = render_template_string(
+        '''
+        <div id="shipping-progress-section" hx-get="/api/shipping_progress" hx-trigger="load" hx-swap="innerHTML">
+            <!-- Il contenuto della barra di spedizione verrà inserito qui -->
+        </div>
+        '''
+    )
 
-    
+    response = make_response(response_html + shipping_progress_html)
+
+    # Attiva i trigger per aggiornare il badge del carrello e la barra di spedizione
     response.headers['HX-Trigger'] = json.dumps({
-        'updateCartBadge': cart_item_count,  
-        'updateShipping': True  
+        'updateCartBadge': cart_item_count,
+        'updateShipping': True  # Attiva il trigger per l'aggiornamento della spedizione
     })
 
     return response
@@ -814,9 +820,6 @@ def select_size():
 
     return response_html
 
-
-
-
 @app.route('/close-cart-preview', methods=['GET'])
 def close_cart_preview():
     return '<div></div>', 200  
@@ -824,8 +827,7 @@ def close_cart_preview():
 @app.route('/cart/items/<product_id>', methods=['PUT'])
 def update_cart_item(product_id):
     data = request.form
-    app.logger.debug(f"Richiesta PUT ricevuta per product_id: {product_id}")
-    
+
     try:
         quantity = int(data['quantity'])
         if quantity < 1:
@@ -838,6 +840,7 @@ def update_cart_item(product_id):
             if not user or 'cart' not in user:
                 return jsonify({'msg': 'Cart not found'}), 404
 
+            # Update the product quantity in the user's cart
             for product in user['cart']:
                 if product['product_id'] == product_id:
                     product['quantity'] = quantity
@@ -845,15 +848,14 @@ def update_cart_item(product_id):
                     if full_product:
                         product['name'] = full_product['name']
                         product['price'] = full_product['price']
-                        if 'image_urls' in full_product and full_product['image_urls']:
-                            product['image_url'] = full_product['image_urls'][0]
-                        else:
-                            product['image_url'] = full_product.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg')
+                        product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
                     break
+
             mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': user['cart']}})
             cart = user['cart']
         else:
             cart = get_guest_cart()
+            # Update the product quantity in the guest cart
             for product in cart:
                 if product['product_id'] == product_id:
                     product['quantity'] = quantity
@@ -861,38 +863,61 @@ def update_cart_item(product_id):
                     if full_product:
                         product['name'] = full_product['name']
                         product['price'] = full_product['price']
-                        if 'image_urls' in full_product and full_product['image_urls']:
-                            product['image_url'] = full_product['image_urls'][0]
-                        else:
-                            product['image_url'] = full_product.get('image_url', 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg')
+                        product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
                     break
             save_guest_cart(cart)
 
-        
+        # Calculate the new subtotal and item count
         subtotal = sum(product['price'] * product['quantity'] for product in cart)
         cart_item_count = sum(product['quantity'] for product in cart)
 
-       
-        app.logger.debug(f"Cart item count dopo l'aggiornamento: {cart_item_count}, Subtotal: {subtotal}")
+        # Calculate the discount if applicable
+        discount = 0.15 * subtotal if subtotal >= 50 else 0  # 15% discount over €50
+        total = subtotal - discount
 
-        
-        updated_product_html = render_template('cart_item.html', product=product, cart_item_count=cart_item_count, subtotal=subtotal)
+        # Calculate the shipping progress
+        shipping_threshold = 40
+        shipping_percentage = min(100, (subtotal / shipping_threshold) * 100)
 
-        
+        # Prepare updated product HTML
+        updated_product_html = render_template('cart_item.html', product=product, cart_item_count=cart_item_count, subtotal=subtotal, total=total, discount=discount)
+
+        # Prepare shipping progress HTML (return only the updated progress bar)
+        shipping_progress_html = render_template_string(
+            '''
+            <div class="shipping-progress">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: {{ shipping_percentage }}%;" aria-valuenow="{{ shipping_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ shipping_percentage }}%
+                    </div>
+                </div>
+            </div>
+            ''',
+            shipping_percentage=shipping_percentage
+        )
+
+        # Create response
         response = make_response(updated_product_html)
 
-        
+        # Add HTMX triggers to update the shipping progress separately
         response.headers['HX-Trigger'] = json.dumps({
             'updateCartBadge': cart_item_count,
-            'updateSubtotal': f"€{subtotal:.2f}"
+            'updateSubtotal': f"€{subtotal:.2f}",
+            'updateShipping': True,
+            'updateTotal': f"€{total:.2f}",
+            'updateDiscount': f"€{discount:.2f}" if discount > 0 else None
         })
 
-        
+        # Set the shipping progress in another HTMX trigger
+        response.headers['HX-Trigger-After'] = json.dumps({
+            'updateShippingBar': shipping_progress_html
+        })
+
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
 
         return response
     except Exception as e:
-        app.logger.error(f"Errore durante l'aggiornamento dell'articolo nel carrello: {e}")
+        app.logger.error(f"Error updating cart item: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -901,31 +926,35 @@ def update_cart_item(product_id):
 @app.route('/cart/items/<product_id>', methods=['DELETE'])
 def remove_from_cart(product_id):
     try:
-        
+        # Ottieni il parametro 'size' dalla richiesta
         size = request.args.get('size')
 
         if not size:
             return jsonify({'error': 'Size parameter is required'}), 400
 
         user_id = session.get('user_id')
+        
         if user_id:
+            # Trova l'utente nel database
             user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
             if not user or 'cart' not in user:
                 return jsonify({'msg': 'Cart not found'}), 404
-
             
+            # Rimuovi il prodotto dal carrello
             original_cart_length = len(user['cart'])
             user['cart'] = [product for product in user['cart'] if not (product['product_id'] == product_id and product['size'] == size)]
 
             if len(user['cart']) == original_cart_length:
                 return jsonify({'msg': 'Product not found in cart'}), 404
 
+            # Aggiorna il carrello dell'utente nel database
             mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': user['cart']}})
             cart = user['cart']
         else:
+            # Gestione per gli utenti ospiti
             cart = get_guest_cart()
             original_cart_length = len(cart)
-            
+
             cart = [product for product in cart if not (product['product_id'] == product_id and product['size'] == size)]
 
             if len(cart) == original_cart_length:
@@ -933,14 +962,16 @@ def remove_from_cart(product_id):
 
             save_guest_cart(cart)
 
+        # Calcola il numero totale di articoli nel carrello
         cart_item_count = sum(product['quantity'] for product in cart)
         response = make_response(render_template_string('<div class="alert alert-success">Il prodotto è stato eliminato correttamente!</div>'))
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
+
         return response
+
     except Exception as e:
         print(f"Error removing from cart: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
 
 def get_guest_cart():
     cart = session.get('guest_cart', [])
@@ -1047,7 +1078,6 @@ def view_cart(user_id):
         return response
 
 
-
     
 def get_cart_item_count(user_id):
     if user_id:
@@ -1056,8 +1086,8 @@ def get_cart_item_count(user_id):
             return sum(item['quantity'] for item in user['cart'])
     else:
         cart = get_guest_cart()
-        return sum(item['quantity'] for item in cart)
-    return 0
+        return sum(item['quantity'] for item in cart)  # Restituisci il conteggio per gli utenti non autenticati
+    return 0  # Se non ci sono dati, restituisci 0
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
@@ -1541,6 +1571,7 @@ def show_special_offer():
         '''
     )
     return response_html
+
 @app.route('/api/shipping_progress', methods=['GET'])
 def shipping_progress():
     user = current_user if current_user.is_authenticated else None
@@ -2034,7 +2065,6 @@ def load_more_products():
     else:
        
         return f'{rendered_products}<div hx-swap-oob="true" id="load-more-container" style="display: none;"></div>'
-
 
 
 if __name__ == '__main__':

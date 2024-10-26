@@ -148,10 +148,11 @@
                         {% endif %}
                     </div>
 
-                    <!-- Material Section -->
                     <div class="mt-3">
-                        <h5>Materiale:</h5>
-                        <p>{{ product.material }}</p>
+                        {% if product.material %}
+                            <h5>Materiale:</h5>
+                            <p>{{ product.material }}</p>
+                        {% endif %}
                     </div>
 
                     <!-- Size Selection -->

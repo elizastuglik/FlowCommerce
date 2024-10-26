@@ -12100,7 +12100,7 @@ hr, .horizontal-divider {
 
       .progress-bar-custom {
           height: 100%;
-          background-color: #ffffff;
+          background-color: #28a745;
           transition: width 0.5s ease;
       }
 
