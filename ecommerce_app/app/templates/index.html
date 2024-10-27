@@ -253,9 +253,9 @@
             </div>
 
             <div class="col-lg-9">
-                <section id="featured-products">
-                    <div class="container px-4 px-lg-5 mt-5">
-                        <div id="product-list" class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 product-grid">
+                <section id="search-results" class="mt-5">
+                    <div class="container px-4 px-lg-5">
+                        <div id="product-list" class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4">
                             {% for product in products[:12] %}
                             <div class="col mb-5">
                                 <div class="product-card p-3">
@@ -271,11 +271,9 @@
                                     <div class="product-info">
                                         <h5 class="product-name">{{ product.name }}</h5>
                                         {% if product.discount > 0 %}
-                                           
                                             <span class="text-muted text-decoration-line-through">€{{ product.original_price }}</span>
                                             <span class="fw-bold product-price">€{{ product.price }}</span>
                                         {% else %}
-                                            
                                             <span class="fw-bold product-price">€{{ product.price }}</span>
                                         {% endif %}
                                     </div>
@@ -307,24 +305,23 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <!-- Pulsante per caricare più prodotti -->
-            
-                <div class="text-center mt-4" id="load-more-container">
-                    <button id="load-more-button" class="btn btn-outline-dark" 
-                            hx-get="/api/load_more_products?current_page=2"
-                            hx-target="#product-list"
-                            hx-swap="beforeend"
-                            hx-push-url="false">
-                        Carica altro
-                    </button>
-                </div>
+                        <div class="text-center mt-4" id="load-more-container">
+                            <button id="load-more-button" class="btn btn-outline-dark" 
+                                    hx-get="/api/load_more_products?current_page=2"
+                                    hx-target="#product-list"
+                                    hx-swap="beforeend"
+                                    hx-push-url="false">
+                                Carica altro
+                            </button>
+                        </div>
                     </div>
                 </section>
             </div>
+            
         </div>
     </div>
   
-    
+  
 
 
     
