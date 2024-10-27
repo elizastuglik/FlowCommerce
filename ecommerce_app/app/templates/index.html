@@ -63,9 +63,10 @@
     <span class="free-shipping-text" id="shipping-text">
         Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
     </span>
-    <div class="progress-container">
-        <div class="progress-bar-custom" id="progress-bar" style="width: {{ progress_percentage | default(0) }}%;"></div>
-    </div>
+     <!-- Contenitore della barra di progresso -->
+ <div class="progress-container">
+    <div class="progress-bar-custom" id="progress-bar" style="width: 0%;"></div>
+ </div>
 </div>
 
     <!-- Container for the HTMX-loaded cart preview -->

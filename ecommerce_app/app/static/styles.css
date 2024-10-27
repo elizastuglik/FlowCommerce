@@ -12202,3 +12202,9 @@ hr, .horizontal-divider {
     max-height: 500px;
     width: auto;
 }
+
+.progress-container {
+  background-color: #e9ecef; 
+  overflow: hidden;
+  width: 100%; /* Ensure full width */
+}

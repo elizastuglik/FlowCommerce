@@ -61,7 +61,8 @@
             <div class="d-flex position-relative">
                 <a class="text-dark position-relative p-0 me-2" id="cart-button" href="{{ url_for('view_cart', user_id=user.id if user else 'guest') }}">
                     <i class="bi bi-cart-fill"></i>
-                    <span class="badge bg-dark text-white position-absolute top-0 start-100 translate-middle badge rounded-pill" id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
+                    <span class="badge bg-dark text-white position-absolute top-0 start-100 translate-middle badge rounded-pill" 
+      id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
                 </a>
                 {% if user %}
                     <div class="dropdown">
@@ -92,16 +93,16 @@
  hx-trigger="load, event:updateShipping"
  hx-swap="outerHTML">
  
- <!-- Testo della spedizione gratuita -->
  <span class="free-shipping-text" id="shipping-text">
-    Spedizione gratuita per ordini superiori a 40€. Mancano: €40.0
- </span>
+    Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
+</span>
  
  <!-- Contenitore della barra di progresso -->
  <div class="progress-container">
     <div class="progress-bar-custom" id="progress-bar" style="width: 0%;"></div>
  </div>
 </div>
+
 
 <div class="container mt-5" id="cart-content">
     <h2>Il tuo carrello</h2>
@@ -144,11 +145,13 @@
                     </div>
                     
                     <button class="btn btn-danger btn-sm" 
-                    style="flex-shrink: 0;" 
-                        hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
-                        hx-trigger="event:updateShipping"
-                        hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
-                        hx-swap="outerHTML">Remove</button>
+    style="flex-shrink: 0;" 
+    hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
+    hx-trigger="click"
+    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+    hx-trigger="event:updateShipping"
+    hx-swap="outerHTML">Remove</button>
+
                 </li>
                 {% endfor %}
             </ul>
@@ -161,27 +164,27 @@
         <div class="col-md-1 d-flex justify-content-center">
             <div class="vertical-divider"></div>
         </div>
-
+       
         <!-- Cart Summary -->
         <div class="col-md-3">
             <!-- Subtotale originale -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="me-2">Subtotale originale</h4>
-    <h4 id="cart-subtotal">€{{ subtotal + discount_amount }}</h4>
+    <h4 id="cart-subtotal"  hx-swap-oob="true">€{{ subtotal + discount_amount }}</h4>
 </div>
 
 <!-- Sconto se applicabile -->
 {% if discount_amount > 0 %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="me-2">Sconto applicato</h4>
-    <h4 id="cart-discount">-€{{ discount_amount }}</h4>
+    <h4 id="cart-discount"  hx-swap-oob="true">-€{{ discount_amount }}</h4>
 </div>
 {% endif %}
 
 <!-- Totale dopo lo sconto -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="me-2">Totale</h4>
-    <h4 id="cart-total">€{{ subtotal }}</h4>
+    <h4 id="cart-total"  hx-swap-oob="true">€{{ subtotal }}</h4>
 </div>
 
             <!-- Messaggio motivazionale, sempre visibile -->
@@ -240,6 +243,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+
 </body>
 
 </html>

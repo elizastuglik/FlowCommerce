@@ -19,7 +19,8 @@
                     hx-vals='{"quantity": {{ product["quantity"] + 1 }} }' 
                     hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
                     hx-swap="outerHTML"
-                    hx-trigger="click">+</button>
+                    hx-trigger="click"
+                    hx-trigger="event:updateShipping">+</button>
         </span>
 
         {% if product.get('original_price') and product['original_price'] > product['price'] %}
@@ -31,9 +32,13 @@
     </div>
 
     <button class="btn btn-danger btn-sm" 
-        hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
-        hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
-        hx-swap="outerHTML">Remove</button>
+    style="flex-shrink: 0;" 
+    hx-delete="{{ url_for('remove_from_cart', product_id=product['product_id']) }}?size={{ product['size'] }}" 
+    hx-trigger="click"
+    hx-target="#cart-item-{{ product['product_id'] }}-{{ product['size'] | replace(' ', '-') }}" 
+    hx-trigger="event:updateShipping"
+    hx-swap="outerHTML">Remove</button>
+
 </li>
 
 

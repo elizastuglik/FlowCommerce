@@ -733,33 +733,45 @@ def add_to_cart(user_id):
     
     products_collection.update_one({"_id": ObjectId(product_id)}, {"$inc": {"purchases": quantity}})
 
- 
-
     response_html = render_template_string(
         '''
-        <div class="cart-preview show p-3 border shadow-sm" id="cart-preview">
-            <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Prodotto aggiunto al carrello!</h6>
-                <button type="button" class="btn-close" aria-label="Close" hx-get="{{ url_for('close_cart_preview') }}" hx-target="#cart-preview-container" hx-swap="outerHTML"></button>
-            </div>
-            <hr>
-            <div class="d-flex">
-               <img src="{{ image_url }}" alt="{{ product_name }}" class="img-fluid me-3" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;">
-                <div>
-                    <p class="mb-1"><strong>{{ product_name }}</strong></p>
-                    <p class="mb-1">Quantità: {{ quantity }}</p>
-                    <p class="mb-1">Prezzo: <span class="text-success">€{{ price }}</span></p>
-                    <p class="mb-1">Taglia: {{ size }}</p>
-                </div>
-            </div>
-            <hr>
-            <div class="d-flex justify-content-end">
-                <a href="{{ url_for('view_cart', user_id=user_id) }}" class="btn btn-outline-dark btn-sm flex-grow-1 rounded-0">Vai al carrello</a>
-                <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1 rounded-0" hx-get="{{ url_for('close_cart_preview') }}" hx-target="#cart-preview-container" hx-swap="outerHTML">Continua a fare shopping</button>
+    <div id="shipping-progress-section" class="free-shipping-section"
+        hx-get="/api/shipping_progress"
+        hx-trigger="load, event:updateShipping"
+        hx-swap="outerHTML">
+        
+        <span class="free-shipping-text" id="shipping-text">
+            Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
+        </span>
+        
+        <!-- Contenitore della barra di progresso -->
+        <div class="progress-container" style="background-color: #e9ecef; border-radius: 0.25rem; overflow: hidden;">
+            <div class="progress-bar-custom" id="progress-bar" style="width: {{ shipping_percentage }}%; background-color: #28a745; height: 100%;"></div>
+        </div>
+    </div>
+    <div class="cart-preview show p-3 border shadow-sm" id="cart-preview">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Prodotto aggiunto al carrello!</h6>
+            <button type="button" class="btn-close" aria-label="Close" hx-get="{{ url_for('close_cart_preview') }}" hx-target="#cart-preview-container" hx-swap="outerHTML"></button>
+        </div>
+        <hr>
+        <div class="d-flex">
+            <img src="{{ image_url }}" alt="{{ product_name }}" class="img-fluid me-3" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;">
+            <div>
+                <p class="mb-1"><strong>{{ product_name }}</strong></p>
+                <p class="mb-1">Quantità: {{ quantity }}</p>
+                <p class="mb-1">Prezzo: <span class="text-success">€{{ price }}</span></p>
+                <p class="mb-1">Taglia: {{ size }}</p>
             </div>
         </div>
-        <span class="badge bg-dark text-white ms-1 rounded-pill" id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
-        ''',
+        <hr>
+        <div class="d-flex justify-content-end">
+            <a href="{{ url_for('view_cart', user_id=user_id) }}" class="btn btn-outline-dark btn-sm flex-grow-1 rounded-0">Vai al carrello</a>
+            <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1 rounded-0" hx-get="{{ url_for('close_cart_preview') }}" hx-target="#cart-preview-container" hx-swap="outerHTML">Continua a fare shopping</button>
+        </div>
+    </div>
+    <span class="badge bg-dark text-white ms-1 rounded-pill" id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
+    ''',
         product_name=product['name'],
         quantity=quantity,
         price=price, 
@@ -830,8 +842,10 @@ def update_cart_item(product_id):
 
     try:
         quantity = int(data['quantity'])
-        if quantity < 1:
-            return jsonify({'error': 'Quantity must be at least 1'}), 400
+
+        # If the quantity is 0, we'll just ignore the update for that item
+        if quantity < 0:
+            return jsonify({'error': 'Quantity must be at least 0'}), 400
 
         user_id = session.get('user_id')
         cart = []
@@ -841,30 +855,49 @@ def update_cart_item(product_id):
                 return jsonify({'msg': 'Cart not found'}), 404
 
             # Update the product quantity in the user's cart
+            product_found = False  # Flag to check if product exists in cart
             for product in user['cart']:
                 if product['product_id'] == product_id:
-                    product['quantity'] = quantity
-                    full_product = products_collection.find_one({'_id': ObjectId(product_id)})
-                    if full_product:
-                        product['name'] = full_product['name']
-                        product['price'] = full_product['price']
-                        product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
+                    product_found = True  # Set flag if product is found
+                    if quantity > 0:  # Update quantity if it's greater than 0
+                        product['quantity'] = quantity
+                        full_product = products_collection.find_one({'_id': ObjectId(product_id)})
+                        if full_product:
+                            product['name'] = full_product['name']
+                            product['price'] = full_product['price']
+                            product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
+                    else:
+                        # If quantity is 0, we can choose to do nothing or keep the item in the cart
+                        return jsonify({'msg': 'Quantity must be at least 1 to update'}), 400
                     break
 
+            if not product_found:
+                # If product was not found, add it to the cart (optional)
+                return jsonify({'msg': 'Product not found in cart'}), 404
+            
             mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': user['cart']}})
             cart = user['cart']
         else:
             cart = get_guest_cart()
             # Update the product quantity in the guest cart
+            product_found = False
             for product in cart:
                 if product['product_id'] == product_id:
-                    product['quantity'] = quantity
-                    full_product = products_collection.find_one({'_id': ObjectId(product_id)})
-                    if full_product:
-                        product['name'] = full_product['name']
-                        product['price'] = full_product['price']
-                        product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
+                    product_found = True
+                    if quantity > 0:
+                        product['quantity'] = quantity
+                        full_product = products_collection.find_one({'_id': ObjectId(product_id)})
+                        if full_product:
+                            product['name'] = full_product['name']
+                            product['price'] = full_product['price']
+                            product['image_url'] = full_product.get('image_urls', [None])[0] or 'https://dummyimage.com/450x300/dee2e6/6c757d.jpg'
+                    else:
+                        return jsonify({'msg': 'Quantity must be at least 1 to update'}), 400
                     break
+
+            if not product_found:
+                return jsonify({'msg': 'Product not found in guest cart'}), 404
+            
             save_guest_cart(cart)
 
         # Calculate the new subtotal and item count
@@ -875,103 +908,210 @@ def update_cart_item(product_id):
         discount = 0.15 * subtotal if subtotal >= 50 else 0  # 15% discount over €50
         total = subtotal - discount
 
-        # Calculate the shipping progress
+        # Calculate how much is left for free shipping
         shipping_threshold = 40
+        amount_left = max(0, shipping_threshold - subtotal)  # Calculate how much is left
+
+        # Calculate shipping progress percentage
         shipping_percentage = min(100, (subtotal / shipping_threshold) * 100)
 
-        # Prepare updated product HTML
-        updated_product_html = render_template('cart_item.html', product=product, cart_item_count=cart_item_count, subtotal=subtotal, total=total, discount=discount)
-
-        # Prepare shipping progress HTML (return only the updated progress bar)
-        shipping_progress_html = render_template_string(
+        # Prepare the updated cart summary HTML
+        cart_summary_html = render_template_string(
             '''
-            <div class="shipping-progress">
-                <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: {{ shipping_percentage }}%;" aria-valuenow="{{ shipping_percentage }}" aria-valuemin="0" aria-valuemax="100">
-                        {{ shipping_percentage }}%
+            <div class="container mt-5" id="cart-content">
+                <div class="row">
+                    <div class="col-12">
+                        <div id="shipping-progress-section" class="free-shipping-section"
+                             hx-get="/api/shipping_progress"
+                             hx-trigger="load, event:updateShipping"
+                             hx-swap="outerHTML">
+                             
+                            <span class="free-shipping-text" id="shipping-text">
+                                Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
+                            </span>
+                            
+                            <!-- Contenitore della barra di progresso -->
+                            <div class="progress-container" style="width: 100%;">
+                                <div class="progress-bar-custom" id="progress-bar" style="width: {{ shipping_percentage }}%; background-color: #28a745; height: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cart Summary -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 id="cart-subtotal" hx-swap-oob="true">€{{ subtotal }}</h4>
+                        </div>
+                        
+                        {% if discount > 0 %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 id="cart-discount" hx-swap-oob="true">-€{{ discount }}</h4>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 id="cart-total" hx-swap-oob="true">€{{ total }}</h4>
+                        </div>
+                        
+                        <!-- Badge for cart item count -->
+                        <span class="badge bg-dark text-white position-absolute top-0 start-100 translate-middle badge rounded-pill" 
+                              id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
                     </div>
                 </div>
             </div>
             ''',
+            subtotal=subtotal,
+            total=total,
+            discount=discount,
+            cart_item_count=cart_item_count,
+            amount_left=amount_left,
             shipping_percentage=shipping_percentage
         )
 
         # Create response
-        response = make_response(updated_product_html)
+        response = make_response(cart_summary_html)
 
-        # Add HTMX triggers to update the shipping progress separately
+        # Add triggers to update the UI
         response.headers['HX-Trigger'] = json.dumps({
-            'updateCartBadge': cart_item_count,
-            'updateSubtotal': f"€{subtotal:.2f}",
-            'updateShipping': True,
-            'updateTotal': f"€{total:.2f}",
-            'updateDiscount': f"€{discount:.2f}" if discount > 0 else None
+            'updateCartBadge': cart_item_count,  # Update item count in badge
+            'updateSubtotal': f"€{subtotal:.2f}",  # Update subtotal
+            'updateTotal': f"€{total:.2f}",  # Update total
+            'updateDiscount': f"€{discount:.2f}" if discount > 0 else None,  # Update discount if present
+            'updateShipping': True,  # Update shipping information
+            'updateShippingBar': True  # Added to update the shipping bar
         })
 
-        # Set the shipping progress in another HTMX trigger
-        response.headers['HX-Trigger-After'] = json.dumps({
-            'updateShippingBar': shipping_progress_html
-        })
-
+        # Update the cookie for the cart item count
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
 
         return response
+
+    except ValueError:
+        return jsonify({'error': 'Invalid quantity'}), 400
     except Exception as e:
         app.logger.error(f"Error updating cart item: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 
-
-
 @app.route('/cart/items/<product_id>', methods=['DELETE'])
 def remove_from_cart(product_id):
+    user_id = session.get('user_id')
+    
     try:
-        # Ottieni il parametro 'size' dalla richiesta
-        size = request.args.get('size')
-
-        if not size:
-            return jsonify({'error': 'Size parameter is required'}), 400
-
-        user_id = session.get('user_id')
-        
         if user_id:
-            # Trova l'utente nel database
+            # Recupera l'utente dal database
             user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
             if not user or 'cart' not in user:
                 return jsonify({'msg': 'Cart not found'}), 404
-            
-            # Rimuovi il prodotto dal carrello
-            original_cart_length = len(user['cart'])
-            user['cart'] = [product for product in user['cart'] if not (product['product_id'] == product_id and product['size'] == size)]
 
-            if len(user['cart']) == original_cart_length:
-                return jsonify({'msg': 'Product not found in cart'}), 404
-
-            # Aggiorna il carrello dell'utente nel database
-            mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': user['cart']}})
+            # Rimuovi il prodotto dal carrello dell'utente
             cart = user['cart']
+            cart = [product for product in cart if product['product_id'] != product_id]
+
+            # Aggiorna il carrello nel database
+            mongo.db.users.update_one({'_id': ObjectId(user_id)}, {'$set': {'cart': cart}})
         else:
-            # Gestione per gli utenti ospiti
+            # Gestione del carrello per gli utenti ospiti
             cart = get_guest_cart()
-            original_cart_length = len(cart)
-
-            cart = [product for product in cart if not (product['product_id'] == product_id and product['size'] == size)]
-
-            if len(cart) == original_cart_length:
-                return jsonify({'msg': 'Product not found in cart'}), 404
-
+            cart = [product for product in cart if product['product_id'] != product_id]
             save_guest_cart(cart)
 
-        # Calcola il numero totale di articoli nel carrello
+        # Calcola il nuovo subtotale e il conteggio degli articoli
+        subtotal = sum(product['price'] * product['quantity'] for product in cart)
         cart_item_count = sum(product['quantity'] for product in cart)
-        response = make_response(render_template_string('<div class="alert alert-success">Il prodotto è stato eliminato correttamente!</div>'))
+
+        # Calcola lo sconto se applicabile
+        discount = 0.15 * subtotal if subtotal >= 50 else 0  # Sconto del 15% su oltre €50
+        total = subtotal - discount
+
+        # Calcola quanto manca per la spedizione gratuita
+        shipping_threshold = 40
+        amount_left = max(0, shipping_threshold - subtotal)  # Calcola quanto manca
+
+        # Prepara l'HTML aggiornato per il riepilogo del carrello
+        cart_summary_html = render_template_string(
+            '''
+          <div class="container mt-5" id="cart-content">
+        <div class="row">
+            <div class="col-12">
+                <div id="shipping-progress-section" class="free-shipping-section"
+                     hx-get="/api/shipping_progress"
+                     hx-trigger="load, event:updateShipping"
+                     hx-swap="outerHTML">
+                     
+                    <span class="free-shipping-text" id="shipping-text">
+                        Spedizione gratuita per ordini superiori a 40€. Mancano: €{{ amount_left }}.
+                    </span>
+                    
+                    <!-- Contenitore della barra di progresso -->
+                    <div class="progress-container" style="width: 100%;">
+                        <div class="progress-bar-custom" id="progress-bar" style="width: {{ shipping_percentage }}%; background-color: #28a745; height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+       
+       
+        
+        <!-- Cart Summary -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    
+                    <h4 id="cart-subtotal" hx-swap-oob="true">€{{ subtotal }}</h4>
+                </div>
+                
+                {% if discount > 0 %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    
+                    <h4 id="cart-discount" hx-swap-oob="true">-€{{ discount }}</h4>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    
+                    <h4 id="cart-total" hx-swap-oob="true">€{{ total }}</h4>
+                </div>
+                
+                <!-- Badge for cart item count -->
+                <span class="badge bg-dark text-white position-absolute top-0 start-100 translate-middle badge rounded-pill" 
+                      id="cart-badge" hx-swap-oob="true">{{ cart_item_count }}</span>
+            </div>
+        </div>
+    </div>
+    ''',
+            subtotal=subtotal,
+            total=total,
+            discount=discount,
+            cart_item_count=cart_item_count,
+            amount_left=amount_left
+        )
+
+        # Crea la risposta
+        response = make_response(cart_summary_html)
+        
+        # Aggiungi i trigger per aggiornare la UI
+        response.headers['HX-Trigger'] = json.dumps({
+            'updateCartBadge': cart_item_count,  # Aggiorna il conteggio degli articoli nel badge
+            'updateSubtotal': f"€{subtotal:.2f}",  # Aggiorna il subtotale
+            'updateTotal': f"€{total:.2f}",  # Aggiorna il totale
+            'updateDiscount': f"€{discount:.2f}" if discount > 0 else None,  # Aggiorna lo sconto se presente
+            'updateShipping': True,  # Aggiorna le informazioni di spedizione
+            'updateShippingBar': True  # Aggiunto per aggiornare la barra di spedizione
+        })
+
+        # Aggiorna il cookie per il conteggio degli articoli nel carrello
         response.set_cookie('cart_item_count', str(cart_item_count), max_age=30*24*60*60)
 
         return response
 
     except Exception as e:
-        print(f"Error removing from cart: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error removing cart item: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 
 def get_guest_cart():
     cart = session.get('guest_cart', [])
